@@ -1,1 +1,2 @@
 # Engineer_Thesis
+The aim of this work will be to design, implement in C++ language, prepare documentation and test a library for numerical calculations related to basic spacecraft motion issues. The influence of gravity and vehicle propulsion will be taken into account. The operation will be illustrated and tested on examples of typical problems of orbital mechanics, such as transfer between orbits.
