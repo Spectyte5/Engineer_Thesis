@@ -1,1 +1,7 @@
 # Engineer_Thesis
+The aim of this work will be to design, implement in C++ language, prepare documentation and test a library for numerical calculations related to basic spacecraft motion issues. The influence of gravity and vehicle propulsion will be taken into account. The operation will be illustrated and tested on examples of typical problems of orbital mechanics, such as transfer between orbits.
+
+Solver used will be Adam's method/Linear multistep method
+
+Why?
+WIKIPEDIA: Linear multistep methods are used for the numerical solution of ordinary differential equations. Conceptually, a numerical method starts from an initial point and then takes a short step forward in time to find the next solution point. The process continues with subsequent steps to map out the solution. Single-step methods (such as Euler's method) refer to only one previous point and its derivative to determine the current value. Methods such as Runge–Kutta take some intermediate steps (for example, a half-step) to obtain a higher order method, but then discard all previous information before taking a second step. Multistep methods attempt to gain efficiency by keeping and using the information from previous steps rather than discarding it. Consequently, multistep methods refer to several previous points and derivative values. In the case of linear multistep methods, a linear combination of the previous points and derivative values is used.
