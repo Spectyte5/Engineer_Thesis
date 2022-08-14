@@ -1,16 +1,11 @@
 #include <iostream>
-#include "vector3D.h"
+#include "Vector3D.h"
+#include "Vehicle.h"
 
 int main()
 {
+	Point_Particle Particle1("Maverick", 0, 0, 0, 5.0, 3.0, 2.0, 0, 0, 0, 5);
 
-    Vector3D vector1(5, 4, 3), vector2(2, 3, 4);
-
-    std::cout << "V1: " << vector1 << std::endl;
-    std::cout << "V2: " << vector2 << std::endl;
-
-    std::cout << "V1+V2: " << vector1 + vector2 << std::endl;
-    std::cout << "V1-V2: " << vector1 - vector2 << std::endl;
-
-    std::cout << "V1*4: " << vector1 * 4 << std::endl;
+	Particle1.Print_info();
+	
 }

@@ -4,14 +4,14 @@ class Vector3D {
 
 public:
 
-	float x;
-	float y;
-	float z;
+	double x;
+	double y;
+	double z;
 
 	//default constructor
 	Vector3D();
 	//constructor with x, y and z values
-	Vector3D(float x, float y, float z);
+	Vector3D(double x, double y, double z);
 
 	//vector operations: add two vectors: v1.add(v2) equals to v1+v2 etc.
 	Vector3D& Add(const Vector3D& vect);
@@ -34,7 +34,7 @@ public:
 	//multiply our vector by scale
 	Vector3D& operator*(const int& i);
 
-	//zero our vector
+	//set values of the x,y,z to 0
 	Vector3D& Zero();
 
 	//overload << opearator to display vectors:
