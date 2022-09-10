@@ -128,10 +128,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Engineer_Thesis.cpp" />
+    <ClCompile Include="Solver.cpp" />
     <ClCompile Include="Vehicle.cpp" />
     <ClCompile Include="Vector3D.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Solver.h" />
     <ClInclude Include="Vector3D.h" />
     <ClInclude Include="Vehicle.h" />
   </ItemGroup>

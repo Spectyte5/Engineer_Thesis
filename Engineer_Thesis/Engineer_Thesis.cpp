@@ -1,12 +1,13 @@
 #include <iostream>
-#include "Vector3D.h"
-#include "Vehicle.h"
+#include "Solver.h"
 
 int main()
 {
 
-	Point_Particle Particle("", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	Point_Particle particle("", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	Solver solver;
 
-	Particle.User_set();
-	Particle.Euler();
+	particle.User_set();
+	solver.Euler(particle);
+	solver.Save_data(particle);
 }
