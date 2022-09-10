@@ -66,7 +66,7 @@ plt.xlabel("Time[s]")
 plt.ylabel("Force [N]")
 plt.legend()
 
-plt.suptitle("Normandy Data plots")
+plt.suptitle("%s Data plots" % name)
 plt.savefig('../Engineer_Thesis/Plots/%s.png' % name)
 plt.show()
     
