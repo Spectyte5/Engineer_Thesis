@@ -5,10 +5,14 @@ import os
 print('Data files available for Visualization:')
 path = r'../Engineer_Thesis/Simulation_History/*.txt'
 files = glob.glob(path)
+i = 0
+
 for f in files:
     filename = os.path.basename(f) 
     filename = filename.replace('.txt','')
+    filename = ' %s. ' % i + filename 
     print(filename)
+    i +=1
 
 name = input("Enter name of the data file for visualization: ")
 
@@ -17,15 +21,16 @@ with open('../Engineer_Thesis/Simulation_History/%s.txt' % name) as f:
     time = [float(line.split()[0]) for line in lines]
     mass = [float(line.split()[1]) for line in lines]
     fuel = [float(line.split()[2]) for line in lines]   
-    posx = [float(line.split()[3]) for line in lines]
-    posy = [float(line.split()[4]) for line in lines]
-    posz = [float(line.split()[5]) for line in lines]
-    velx = [float(line.split()[6]) for line in lines]
-    vely = [float(line.split()[7]) for line in lines]
-    velz = [float(line.split()[8]) for line in lines]
-    forx = [float(line.split()[9]) for line in lines]
-    fory = [float(line.split()[10]) for line in lines]
-    forz = [float(line.split()[11]) for line in lines]
+    fuse = [float(line.split()[3]) for line in lines]   
+    posx = [float(line.split()[4]) for line in lines]
+    posy = [float(line.split()[5]) for line in lines]
+    posz = [float(line.split()[6]) for line in lines]
+    velx = [float(line.split()[7]) for line in lines]
+    vely = [float(line.split()[8]) for line in lines]
+    velz = [float(line.split()[9]) for line in lines]
+    forx = [float(line.split()[10]) for line in lines]
+    fory = [float(line.split()[11]) for line in lines]
+    forz = [float(line.split()[12]) for line in lines]
 
 #Mass and fuel
 plt.subplot(2, 2, 1)

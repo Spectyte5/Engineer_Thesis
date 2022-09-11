@@ -3,11 +3,40 @@
 
 int main()
 {
-
 	Point_Particle particle("", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 	Solver solver;
+	
+	enum choice { create, load};
+	char change = 'n';
+	int option=-1;
 
-	particle.User_set();
-	solver.Euler(particle);
-	solver.Save_data(particle);
+	std::cout << "Welcome to C++ library for numerical calculations related to basic spacecraft motion issues." << std::endl;
+	while (std::cout << "Please choose if you want to: \n 0.Create new simulation \n 1.Load an existing simulation " && !(std::cin >> option) || (option < 0 || option > 1)) {
+		std::cin.clear();
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		std::cout << "Invalid Selection\n";
+	}
+
+	switch (option) {
+	case create:
+		particle.User_set();
+		solver.Euler(particle);
+		solver.Save_data(particle);
+		break;
+	case load:
+		solver.Load_data(particle);
+		std::cout << "Do you want to change parameters of the loaded configuration? [y/n]" << std::endl;
+		std::cin >> change;
+		if (change == 'y') {
+			solver.Change_data(particle);
+		}
+		solver.Euler(particle);
+		solver.Save_data(particle);
+		break;
+	default:
+		std::cout << "Invalid Selection\n";
+		break;
+	}
+
 }
+

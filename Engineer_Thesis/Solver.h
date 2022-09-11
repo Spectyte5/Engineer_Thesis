@@ -15,5 +15,12 @@ public:
 	void Euler(Point_Particle& Particle);
 	//Save simulation data to file
 	void Save_data(Point_Particle& Particle);
+	//Load simulation data from file
+	void Load_data(Point_Particle& Particle);
+	//Change data of the loaded simulation
+	void Change_data(Point_Particle& Particle);
+	//save values to vectors
+	void Push_Back(Point_Particle& Particle, double time);
+	//overload if i need to pass each parameter seperately
+	void Push_Back(double time, double mass, double fuel, Vector3D position, Vector3D velocity, Vector3D force);
 };
-
