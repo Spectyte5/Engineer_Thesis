@@ -12,15 +12,20 @@ public:
 	Vector3D velocity;
 	Vector3D force;
 	Vector3D displacement = { 0,0,0 };
+	Vector3D PotentialEnergy = { 0,0,0 };
+	Vector3D KineticEnergy;
 	double mass;
 	double fuel;
 	double fuel_usage;
+	bool CalculatedEnergy = 0;
 };
 
 //body having no size, no rotation (Point-mass)
 class Point_Particle : public Vehicle {
-
+	
 public:
+	//Basic Constructor
+	Point_Particle() {};
 	//Constructor for the point-mass
 	Point_Particle(std::string n, double rx, double ry, double rz, double vx, double vy, double vz, double fx, double fy, double fz, double m, double fuel, double fuel_usage);
 	//Print information about a Particle

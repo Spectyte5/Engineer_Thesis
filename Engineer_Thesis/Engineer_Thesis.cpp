@@ -3,7 +3,6 @@
 
 int main()
 {
-	Point_Particle particle("", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 	Solver solver;
 	
 	enum choice { create, load};
@@ -19,19 +18,29 @@ int main()
 
 	switch (option) {
 	case create:
-		particle.User_set();
-		solver.Euler(particle);
-		solver.Save_data(particle);
+		solver.Particle.User_set();
+		solver.Setup();
+		solver.Euler();
+		solver.Save_data();
+		solver.Save_planets();
 		break;
 	case load:
-		solver.Load_data(particle);
-		std::cout << "Do you want to change parameters of the loaded configuration? [y/n]" << std::endl;
+		solver.Load_data();
+		solver.Load_planets();
+		std::cout << "Do you want to change parameters of the ship? [y/n]" << std::endl;
 		std::cin >> change;
 		if (change == 'y') {
-			solver.Change_data(particle);
+			solver.Change_data();
 		}
-		solver.Euler(particle);
-		solver.Save_data(particle);
+		change = 'n';
+		std::cout << "Do you want to change configuration of planets? [y/n]" << std::endl;
+		std::cin >> change;
+		if (change == 'y') {
+			solver.Change_planets();
+		}
+		solver.Euler();
+		solver.Save_data();
+		solver.Save_planets();
 		break;
 	default:
 		std::cout << "Invalid Selection\n";

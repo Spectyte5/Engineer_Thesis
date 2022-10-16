@@ -4,31 +4,41 @@ Point_Particle::Point_Particle(std::string n, double rx, double ry, double rz, d
 
 	//name 
 	name = n;
+	
 	//position
-	position.x = rx;
-	position.y = ry;
-	position.z = rz;
+	position = { rx, ry, rz };
+
 	//velocities
-	velocity.x = vx;
-	velocity.y = vy;
-	velocity.z = vz;
+	velocity = { vx, vy, vz };
+	
 	//forces
-	force.x = fx;
-	force.y = fy;
-	force.z = fz;
+	force = { fx, fy, fz };
+	
 	//mass
 	mass = m;
+	
 	//fuel
 	fuel = f;
 	fuel_usage = u;
+
+	//Energy
+	KineticEnergy = { velocity.x * mass / 2, velocity.y * mass / 2 , velocity.z * mass / 2 };
 }
 
 void Point_Particle::Print_info() {
 	
-	std::cout << this->name << " Data: " << "\n mass: " << this->mass << " kg" <<"\n position : " 
-		<< this->position << "\n displacement : " << this->displacement << " m" << "\n velocity : " 
-		<< this->velocity << " m/s" << "\n force : " << this->force << " N" << "\n fuel mass : " 
-		<< this->fuel << " kg" << "\n fuel consumption : " << this->fuel_usage << " kg/s" << std::endl;
+	std::cout << this->name << " Data: " << "\n mass: " << this->mass << " kg" << "\n position : "
+		<< this->position << "\n displacement : " << this->displacement << " m" << "\n velocity : "
+		<< this->velocity << " m/s" << "\n force : " << this->force << " N" << "\n fuel mass : "
+		<< this->fuel << " kg" << "\n fuel consumption : " << this->fuel_usage << " kg/s";
+
+	//check if potential energy can be displaced (Are planets initialzed?)	
+	if (CalculatedEnergy){
+
+		std::cout << "\n kinetic energy: " << this->KineticEnergy << " J" << "\n potential energy: " << this->PotentialEnergy << " J";
+	}
+
+	std::cout << "\n";
 }
 
 void Point_Particle::User_set() {

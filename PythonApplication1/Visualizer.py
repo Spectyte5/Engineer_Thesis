@@ -3,7 +3,7 @@ import glob
 import os
 
 print('Data files available for Visualization:')
-path = r'../Engineer_Thesis/Simulation_History/*.txt'
+path = r'../Engineer_Thesis/Simulation_History/Ships/*.txt'
 files = glob.glob(path)
 i = 0
 
@@ -16,7 +16,7 @@ for f in files:
 
 name = input("Enter name of the data file for visualization: ")
 
-with open('../Engineer_Thesis/Simulation_History/%s.txt' % name) as f:
+with open('../Engineer_Thesis/Simulation_History/Ships/%s.txt' % name) as f:
     lines = f.readlines()
     time = [float(line.split()[0]) for line in lines]
     mass = [float(line.split()[1]) for line in lines]
@@ -31,44 +31,70 @@ with open('../Engineer_Thesis/Simulation_History/%s.txt' % name) as f:
     forx = [float(line.split()[10]) for line in lines]
     fory = [float(line.split()[11]) for line in lines]
     forz = [float(line.split()[12]) for line in lines]
+    kinx = [float(line.split()[13]) for line in lines]
+    kiny = [float(line.split()[14]) for line in lines]
+    kinz = [float(line.split()[15]) for line in lines]
+    potx = [float(line.split()[16]) for line in lines]
+    poty = [float(line.split()[17]) for line in lines]
+    potz = [float(line.split()[18]) for line in lines]
 
 #Mass and fuel
-plt.subplot(2, 2, 1)
+plt.subplot(2, 3, 1)
 plt.plot(time, mass, label="mass")
 plt.plot(time, fuel, label="fuel")
 plt.title("Mass in time plot")
-plt.xlabel("Time [s]")
-plt.ylabel("Mass [kg]")
+plt.xlabel("Time[s]")
+plt.ylabel("Mass[kg]")
 plt.legend()
 
 #Position
-plt.subplot(2, 2, 2)
+plt.subplot(2, 3, 2)
 plt.plot(time, posx, label="x")
 plt.plot(time, posy, label="y")
 plt.plot(time, posz, label="z")
 plt.title("Position in time plot")
 plt.xlabel("Time[s]")
-plt.ylabel("Position [m]")
+plt.ylabel("Position[m]")
 plt.legend()
 
 #Velocity
-plt.subplot(2, 2, 3)
+plt.subplot(2, 3, 3)
 plt.plot(time, velx, label="x")
 plt.plot(time, vely, label="y")
 plt.plot(time, velz, label="z")
 plt.title("Velocity in time plot")
 plt.xlabel("Time[s]")
-plt.ylabel("Velocity [m/s]")
+plt.ylabel("Velocity[m/s]")
 plt.legend()
 
 #Force
-plt.subplot(2, 2, 4)
+plt.subplot(2, 3, 4)
 plt.plot(time, forx, label="x")
 plt.plot(time, fory, label="y")
 plt.plot(time, forz, label="z")
 plt.title("Force in time plot")
 plt.xlabel("Time[s]")
-plt.ylabel("Force [N]")
+plt.ylabel("Force[N]")
+plt.legend()
+
+#Kinetic Energy
+plt.subplot(2, 3, 5)
+plt.plot(time, kinx, label="x")
+plt.plot(time, kiny, label="y")
+plt.plot(time, kinz, label="z")
+plt.title("Kinetic Energy in time plot")
+plt.xlabel("Time[s]")
+plt.ylabel("Energy[J]")
+plt.legend()
+
+#Potential Energy
+plt.subplot(2, 3, 6)
+plt.plot(time, kinx, label="x")
+plt.plot(time, kiny, label="y")
+plt.plot(time, kinz, label="z")
+plt.title("Potential Energy in time plot")
+plt.xlabel("Time[s]")
+plt.ylabel("Energy[J]")
 plt.legend()
 
 plt.suptitle("%s Data plots" % name)

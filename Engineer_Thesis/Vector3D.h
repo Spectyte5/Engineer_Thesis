@@ -40,4 +40,5 @@ public:
 	//overload << opearator to display vectors:
 	friend std::ostream& operator << (std::ostream& output, const Vector3D& vect);
 
+	bool VectorsEqual(const Vector3D& vect);
 };

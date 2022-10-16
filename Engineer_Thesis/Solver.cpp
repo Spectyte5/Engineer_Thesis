@@ -2,7 +2,67 @@
 #include <fstream>
 #include <filesystem>
 
-void Solver::Euler(Point_Particle& Particle) {
+void Solver::Populate() {
+
+	double i=0;
+	bool CalculateInertia = false;
+	Planet planet(0, 0, 0, 0, 0, "");
+
+	//Get ammount of planets in sim
+	while (std::cout << "Select ammount of planets in simulation: " && !(std::cin >> Planet_Num) || (Planet_Num < 0)) {
+		std::cin.clear();
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		std::cout << "Invalid input; please re-enter.\n";
+	}
+
+	//Set parameters for planets and put in the planets vector
+	for (int i = 0; i < Planet_Num; i++) {
+		
+		std::cout << "Enter name of the planet " << i << " : ";
+		std::cin >> planet.name;
+
+		while (std::cout << "Enter mass of the planet " << i << " : " && !(std::cin >> planet.mass) || (planet.mass < 0)) {
+			std::cin.clear();
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+			std::cout << "Invalid input; please re-enter.\n";
+		}
+		
+		while (std::cout << "Enter radius of the planet " << i << " : " && !(std::cin >> planet.radius) || (planet.radius < 0)) {
+			std::cin.clear();
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+			std::cout << "Invalid input; please re-enter.\n";
+		}
+
+		std::cout << "Enter position x,y,z of the planet " << i << " : ";
+		std::cin >> planet.position.x >> planet.position.y >> planet.position.z;
+
+
+		while (std::cout << "Do you want to input inertia?\n 0 = NO \n 1 = YES " && !(std::cin >> CalculateInertia)) {
+			std::cin.clear();
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+			std::cout << "Invalid input; please re-enter.\n";
+		}
+
+		if (CalculateInertia) {
+
+			while (std::cout << "Enter inertia of the planet " << i << " : " && !(std::cin >> planet.inertia) || (planet.inertia < 0)) {
+				std::cin.clear();
+				std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+				std::cout << "Invalid input; please re-enter.\n";
+			}
+		}
+		else {
+			planet.inertia = 0.4 * planet.mass * planet.radius * planet.radius;
+		}
+
+		Planets.push_back(planet);
+		std::cout << "\nPlanet Added: \n";
+		planet.Print_info();
+	}
+}
+
+void Solver::Setup() {
+	Populate();
 
 	while (std::cout << "Input a time of motion: " && !(std::cin >> T) || (T < 0)) {
 		std::cin.clear();
@@ -21,55 +81,90 @@ void Solver::Euler(Point_Particle& Particle) {
 	}
 
 	//write initial values to vectors
-	Push_Back(Particle, 0);
+	Push_Back(0);
+}
+
+void Solver::Euler() {
+
+	Vector3D grav_forces;
+	Vector3D distance;
 
 	for (double time = t; time < T+t; time += t) {
 
 		double fuel_used = Particle.fuel_usage * t;
+		grav_forces.Zero();
+		distance.Zero();
 
-		//velocity
-		if (Particle.mass > 0) {
+		if (Planet_Num > 0) {
+			for (auto& p : Planets) {
+				
+				//Recalculate potential energy
+				Particle.PotentialEnergy.Zero();
 
-			//x
-			if (time >= tx && Particle.fuel > 0 && Particle.force.x != 0) {
-				Particle.velocity.x += (Particle.force.x / Particle.mass) * t;
-				Particle.fuel -= fuel_used; //fuel used
-				Particle.mass -= fuel_used;
+				//distance between ship and planets
+				distance = Particle.position - p.position;
+
+				std::cout << "HERE MAN: " << distance << std::endl;
+
+				//Potential energy
+				Particle.PotentialEnergy.x -= (G * p.mass * Particle.mass) / (p.radius + distance.x);
+				Particle.PotentialEnergy.y -= (G * p.mass * Particle.mass) / (p.radius + distance.y);
+				Particle.PotentialEnergy.z -= (G * p.mass * Particle.mass) / (p.radius + distance.z);
+
+				//gravitational forces
+				grav_forces.x += ((G * p.mass * Particle.mass) / ((p.radius + distance.x) * (p.radius + distance.x)));
+				grav_forces.y += ((G * p.mass * Particle.mass) / ((p.radius + distance.y) * (p.radius + distance.y)));
+				grav_forces.z += ((G * p.mass * Particle.mass) / ((p.radius + distance.z) * (p.radius + distance.z)));
 			}
 
-			//y
-			if (time >= ty && Particle.fuel > 0 && Particle.force.y != 0) {
-				Particle.velocity.y += (Particle.force.y / Particle.mass) * t;
-				Particle.fuel -= fuel_used;
-				Particle.mass -= fuel_used;
+			//Change initial value of energy and start printing energy
+			if (time == t) {
+				Particle.KineticEnergy = { Particle.velocity.x * Particle.mass / 2, Particle.velocity.y * Particle.mass / 2 , Particle.velocity.z * Particle.mass / 2 };
+				kinetic_data.front() = Particle.KineticEnergy;
+				potential_data.front() = Particle.PotentialEnergy;
+				Particle.CalculatedEnergy = true;
 			}
 
-			//z
-			if (time >= tz && Particle.fuel > 0 && Particle.force.z != 0) {
-				Particle.velocity.z += (Particle.force.z / Particle.mass) * t;
-				Particle.fuel -= fuel_used;
-				Particle.mass -= fuel_used;
-			}
 		}
+			if (Particle.mass > 0) {
 
+				//x
+				if (time >= tx && Particle.fuel > 0 && Particle.force.x != 0) {
+					Particle.velocity.x += ((Particle.force.x + grav_forces.x) / Particle.mass) * t;
+					Particle.fuel -= fuel_used; //fuel used
+					Particle.mass -= fuel_used;
+				}
+
+				//y
+				else if (time >= ty && Particle.fuel > 0 && Particle.force.y != 0) {
+					Particle.velocity.y += ((Particle.force.y + grav_forces.y) / Particle.mass) * t;
+					Particle.fuel -= fuel_used;
+					Particle.mass -= fuel_used;
+				}
+
+				//z
+				else if (time >= tz && Particle.fuel > 0 && Particle.force.z != 0) {
+					Particle.velocity.z += ((Particle.force.z + grav_forces.z) / Particle.mass) * t;
+					Particle.fuel -= fuel_used;
+					Particle.mass -= fuel_used;
+				}
+				else {
+					Particle.velocity.x += (grav_forces.x / Particle.mass) * t;
+					Particle.velocity.y += (grav_forces.y / Particle.mass) * t;
+					Particle.velocity.z += (grav_forces.z / Particle.mass) * t;
+				}
+			}
 		//position
-		//x
-		Particle.position.x += Particle.velocity.x;
-		//y
-		Particle.position.y += Particle.velocity.y;
-		//z
-		Particle.position.z += Particle.velocity.z;
+		Particle.position += Particle.velocity;
 
 		//displacment
-		//x
-		Particle.displacement.x += Particle.velocity.x;
-		//y
-		Particle.displacement.y += Particle.velocity.y;
-		//z
-		Particle.displacement.z += Particle.velocity.z;
+		Particle.displacement += Particle.velocity;
+
+		//kinetic energy 
+		Particle.KineticEnergy = { Particle.velocity.x * Particle.mass / 2, Particle.velocity.y * Particle.mass / 2 , Particle.velocity.z * Particle.mass / 2 };
 
 		//save values to vectors
-		Push_Back(Particle, time);
+		Push_Back(time);
 	}
 
 	//display information at the end of motion:
@@ -77,10 +172,10 @@ void Solver::Euler(Point_Particle& Particle) {
 	Particle.Print_info();
 }
 
-void Solver::Save_data(Point_Particle& Particle) {
+void Solver::Save_data() {
 
 	std::string particle_name = Particle.name;
-	std::string filename = "./Simulation_History/";
+	std::string filename = "./Simulation_History/Ships/";
 	particle_name.append(".txt");
 	filename.append(particle_name);
 	std::ofstream file;
@@ -89,21 +184,24 @@ void Solver::Save_data(Point_Particle& Particle) {
 	for (auto t = 0; t < time_data.size(); t++) {
 
 		file << time_data[t] << " " << mass_data[t] << " " << fuel_data[t] << " " << Particle.fuel_usage
-			<< " " << position_data[t].x << " " << position_data[t].z << " " << position_data[t].y
-			<< " " << velocity_data[t].x << " " << velocity_data[t].z << " " << velocity_data[t].y
-			<< " " << force_data[t].x << " " << force_data[t].z << " " << force_data[t].y << std::endl;
+			<< " " << position_data[t].x << " " << position_data[t].y << " " << position_data[t].z
+			<< " " << velocity_data[t].x << " " << velocity_data[t].y << " " << velocity_data[t].z
+			<< " " << force_data[t].x << " " << force_data[t].y << " " << force_data[t].z 
+			<< " " << kinetic_data[t].x << " " << kinetic_data[t].y << " " << kinetic_data[t].z
+			<< " " << potential_data[t].x << " " << potential_data[t].y << " " << potential_data[t].z
+			<< std::endl;
 	}
 	file.close();
 }
 
-void Solver::Load_data(Point_Particle& Particle) {
+void Solver::Load_data() {
 	
 	std::string particle_name;
 	std::ifstream file;
 	int i = 0;
 
 	std::cout << "Simulation data available: " << std::endl;
-	const std::filesystem::path path{ ".\\Simulation_History" };
+	const std::filesystem::path path{ ".\\Simulation_History\\Ships" };
 
 	//looking for all the files with .txt extenstion in the path:
 	for (auto const& dir_entry : std::filesystem::directory_iterator{ path }) {
@@ -118,7 +216,7 @@ void Solver::Load_data(Point_Particle& Particle) {
 		std::cout << "Enter simulation name: " << std::endl;
 		std::cin >> particle_name;
 		std::cout << "\n";
-		std::string filename = "./Simulation_History/";;
+		std::string filename = "./Simulation_History/Ships/";;
 		filename.append(particle_name + ".txt");
 		//check if file exists:
 		file.open(filename.c_str());
@@ -136,17 +234,19 @@ void Solver::Load_data(Point_Particle& Particle) {
 	
 	//temporary storage for reading from file
 	double time_temp, mass_temp, fuel_temp, fuel_use;
-	Vector3D position_temp, velocity_temp, force_temp;
+	Vector3D position_temp, velocity_temp, force_temp, kin_temp, pot_temp;
 
 	while (!file.eof()) {
 	
 		file >> time_temp >> mass_temp >> fuel_temp >> fuel_use
-			>> position_temp.x >> position_temp.z >> position_temp.y
-			>> velocity_temp.x >> velocity_temp.z >> velocity_temp.y
-			>> force_temp.x >> force_temp.z >> force_temp.y;
+			>> position_temp.x >> position_temp.y >> position_temp.z
+			>> velocity_temp.x >> velocity_temp.y >> velocity_temp.z
+			>> force_temp.x >> force_temp.y >> force_temp.z
+			>> kin_temp.x >> kin_temp.y >> kin_temp.z
+			>> pot_temp.x >> pot_temp.y >> pot_temp.z;
 
 		//load all data from the file to corresponding vectors
-		Push_Back(time_temp, mass_temp, fuel_temp, position_temp, velocity_temp, force_temp);
+		Push_Back(time_temp, mass_temp, fuel_temp, position_temp, velocity_temp, force_temp, kin_temp, pot_temp);
 	}
 
 		//set particle to initial value if user wants to run the same simulation again
@@ -167,16 +267,12 @@ void Solver::Load_data(Point_Particle& Particle) {
 		Particle.force.y = force_data[0].y;
 		Particle.force.z = force_data[0].z;
 
-		//calculate displacement
-		Particle.displacement.x = position_data.back().x - position_data.front().x;
-		Particle.displacement.y = position_data.back().y - position_data.front().y;
-		Particle.displacement.z = position_data.back().z - position_data.front().z;
-
-
+		//set displacement to 0
+		Particle.displacement.Zero();
 		Particle.Print_info();
 }
 
-void Solver::Push_Back(Point_Particle& Particle, double time) {
+void Solver::Push_Back(double time) {
 
 	time_data.push_back(time);
 	mass_data.push_back(Particle.mass);
@@ -184,9 +280,11 @@ void Solver::Push_Back(Point_Particle& Particle, double time) {
 	position_data.push_back(Particle.position);
 	velocity_data.push_back(Particle.velocity);
 	force_data.push_back(Particle.force);
+	kinetic_data.push_back(Particle.KineticEnergy);
+	potential_data.push_back(Particle.PotentialEnergy);
 }
 
-void Solver::Push_Back(double time, double mass, double fuel, Vector3D position, Vector3D velocity, Vector3D force) {
+void Solver::Push_Back(double time, double mass, double fuel, Vector3D position, Vector3D velocity, Vector3D force, Vector3D kinetic_energy, Vector3D potential_energy){
 
 	time_data.push_back(time);
 	mass_data.push_back(mass);
@@ -194,9 +292,11 @@ void Solver::Push_Back(double time, double mass, double fuel, Vector3D position,
 	position_data.push_back(position);
 	velocity_data.push_back(velocity);
 	force_data.push_back(force);
+	kinetic_data.push_back(kinetic_energy);
+	potential_data.push_back(potential_energy);
 }
 
-void Solver::Change_data(Point_Particle& Particle){
+void Solver::Change_data(){
 
 	char choice = 'n';
 	std::cout << "Data changing of the particle ";
@@ -233,10 +333,123 @@ void Solver::Change_data(Point_Particle& Particle){
 			std::cout << "Input force x,y,z in N with - to change direction: [y/n]";
 			std::cin >> Particle.force.x >> Particle.force.y >> Particle.force.z;
 		}
-	std::cout << "Do you wish to change name? [y/n]";
+	std::cout << "Do you wish to change fuel usage? [y/n]";
 	std::cin >> choice;
 		if (choice == 'y') {
 			std::cout << "Input fuel usage in kg/s: ";
 			std::cin >> Particle.fuel_usage;
 		}
+
+		//Data changed so recalculate Potential Energy
+		Particle.CalculatedEnergy = false;
+}
+
+void Solver::Save_planets() {
+
+	std::string particle_name = Particle.name;
+	std::string filename = "./Simulation_History/Planets/";
+	particle_name.append("_planets.txt");
+	filename.append(particle_name);
+	std::ofstream file;
+	file.open(filename.c_str());
+
+	if (Planet_Num == 0) {
+		file.clear();
+	}
+	else {
+		for (auto& p : Planets) {
+
+			file << p.name << " " << p.mass << " " << p.radius
+				<< " " << p.inertia << " " << p.position.x
+				<< " " << p.position.y << " " << p.position.z << " " << std::endl;
+		}
+	}
+
+	file.close();
+}
+
+void Solver::Load_planets() {
+
+	Planet_Num = 0;
+	std::string particle_name = Particle.name;
+	std::string filename = "./Simulation_History/Planets/";
+	particle_name.append("_planets.txt");
+	filename.append(particle_name);
+	std::ifstream file;
+	Planet planet(0, 0, 0, 0, 0, "");
+
+	//open file
+	file.open(filename.c_str());
+
+	//temporary storage for reading from file
+	std::string name_temp;
+	double mass_temp, radius_temp, inertia_temp;
+	Vector3D position_temp;
+
+	//TODO: fix double reading
+	while (!file.eof()) {
+		file >> name_temp >> mass_temp >> radius_temp >> inertia_temp 
+			>> position_temp.x >> position_temp.y >> position_temp.z;
+
+		//assign planet's data
+		planet.name = name_temp;
+		planet.mass = mass_temp;
+		planet.radius = radius_temp;
+		planet.inertia = inertia_temp;
+		planet.position = position_temp;
+
+		//load planets to solver vector Planets
+		Planets.push_back(planet);
+		std::cout << "\nPlanet Loaded: \n";
+		planet.Print_info();
+		Planet_Num++;
+	}
+
+	file.close();
+}
+
+void Solver::Change_planets() {
+
+	enum choice { Add, Edit, Remove };
+	int option = -1;
+	int i = 0;
+	//first ask if he wants to change or remove any of existing planets
+	for (auto& p : Planets) {
+		std::cout << "\nCurrent Planet: " << std::endl;
+		p.Print_info();
+
+		while (std::cout << "\nPlease choose if you want to: \n 0.Add new planet \n 1.Change current planet \n 2.Remove current planet " && !(std::cin >> option) || (option < 0 || option > 2)) {
+			std::cin.clear();
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+			std::cout << "Invalid Selection\n";
+		}
+
+		switch (option) {
+		case Add:{
+			Planet planet;
+			Planets.push_back(planet);
+			std::cout << "\nPlanet Added: \n";
+			planet.Print_info();
+			Planet_Num++;
+			break;
+		}
+		case Edit: {
+			p.Change_info();
+			break; }
+
+		case Remove: {
+			Planets.erase(Planets.begin() + i);
+			Planet_Num--;
+			break; }
+
+		default: {
+			std::cout << "Invalid Selection\n";
+			break;
+		}
+		}
+		std::cout << "\nCurrent Planet after changes: " << std::endl;
+		p.Print_info();
+		i++;
+		if (Planet_Num == 1) break;
+	} 
 }

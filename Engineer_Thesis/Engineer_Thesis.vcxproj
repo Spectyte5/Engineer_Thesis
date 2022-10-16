@@ -134,6 +134,7 @@
     <ClCompile Include="Vector3D.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Planet.h" />
     <ClInclude Include="Solver.h" />
     <ClInclude Include="Vector3D.h" />
     <ClInclude Include="Vehicle.h" />

@@ -113,3 +113,11 @@ Vector3D& Vector3D::Zero() {
 
 	return *this;
 }
+
+bool Vector3D::VectorsEqual(const Vector3D& vect) {
+	if (x == vect.x && y == vect.y && z == vect.z) {
+		return true;
+	}
+	std::cout << "\n" << *this << " is not equal to: " << vect << "\n" << std::endl;
+	return false;
+}
