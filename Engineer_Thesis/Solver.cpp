@@ -5,6 +5,7 @@
 void Solver::Populate() {
 
 	double i=0;
+	int Planet_Num;
 	bool CalculateInertia = false;
 	Planet planet(0, 0, 0, 0, 0, "");
 
@@ -88,6 +89,7 @@ void Solver::Euler() {
 
 	Vector3D grav_forces;
 	Vector3D distance;
+	bool engine_used = false;
 
 	for (double time = t; time < T+t; time += t) {
 
@@ -95,16 +97,14 @@ void Solver::Euler() {
 		grav_forces.Zero();
 		distance.Zero();
 
-		if (Planet_Num > 0) {
+		if (!Planets.empty()) { 
 			for (auto& p : Planets) {
-				
+
 				//Recalculate potential energy
 				Particle.PotentialEnergy.Zero();
 
 				//distance between ship and planets
 				distance = Particle.position - p.position;
-
-				std::cout << "HERE MAN: " << distance << std::endl;
 
 				//Potential energy
 				Particle.PotentialEnergy.x -= (G * p.mass * Particle.mass) / (p.radius + distance.x);
@@ -125,35 +125,47 @@ void Solver::Euler() {
 				Particle.CalculatedEnergy = true;
 			}
 
-		}
-			if (Particle.mass > 0) {
+		}	
+
+			//check engine forces only if particle has a mass
+			if (Particle.mass > 0 ) {
+
+				//will engine be used in this iteration 
+				//TODO: not sure if fuel should decrease sepreatly for each plane, or if it is connected so temporaily it will be connected:
+				engine_used = false;
 
 				//x
 				if (time >= tx && Particle.fuel > 0 && Particle.force.x != 0) {
 					Particle.velocity.x += ((Particle.force.x + grav_forces.x) / Particle.mass) * t;
-					Particle.fuel -= fuel_used; //fuel used
-					Particle.mass -= fuel_used;
+					engine_used = true;
 				}
 
-				//y
-				else if (time >= ty && Particle.fuel > 0 && Particle.force.y != 0) {
+				//y 
+				if (time >= ty && Particle.fuel > 0 && Particle.force.y != 0) {
 					Particle.velocity.y += ((Particle.force.y + grav_forces.y) / Particle.mass) * t;
-					Particle.fuel -= fuel_used;
-					Particle.mass -= fuel_used;
+					engine_used = true;
 				}
 
 				//z
-				else if (time >= tz && Particle.fuel > 0 && Particle.force.z != 0) {
+				if (time >= tz && Particle.fuel > 0 && Particle.force.z != 0) {
 					Particle.velocity.z += ((Particle.force.z + grav_forces.z) / Particle.mass) * t;
+					engine_used = true;
+				}
+
+				//remove fuel used 
+				if (engine_used) {
 					Particle.fuel -= fuel_used;
 					Particle.mass -= fuel_used;
 				}
+
+				//if engines not used change velocity because of gravitational forces
 				else {
 					Particle.velocity.x += (grav_forces.x / Particle.mass) * t;
 					Particle.velocity.y += (grav_forces.y / Particle.mass) * t;
 					Particle.velocity.z += (grav_forces.z / Particle.mass) * t;
 				}
 			}
+
 		//position
 		Particle.position += Particle.velocity;
 
@@ -198,7 +210,6 @@ void Solver::Load_data() {
 	
 	std::string particle_name;
 	std::ifstream file;
-	int i = 0;
 
 	std::cout << "Simulation data available: " << std::endl;
 	const std::filesystem::path path{ ".\\Simulation_History\\Ships" };
@@ -206,8 +217,7 @@ void Solver::Load_data() {
 	//looking for all the files with .txt extenstion in the path:
 	for (auto const& dir_entry : std::filesystem::directory_iterator{ path }) {
 		if (dir_entry.is_regular_file() && dir_entry.path().string().ends_with(".txt")) {
-			std::cout << i << ". " << dir_entry.path().filename().replace_extension() << '\n'; //replace_extenstion removes the .txt from the output
-			i++;
+			std::cout << dir_entry.path().filename().replace_extension() << '\n'; //replace_extenstion removes the .txt from the output
 		}
 	}
 
@@ -236,14 +246,12 @@ void Solver::Load_data() {
 	double time_temp, mass_temp, fuel_temp, fuel_use;
 	Vector3D position_temp, velocity_temp, force_temp, kin_temp, pot_temp;
 
-	while (!file.eof()) {
-	
-		file >> time_temp >> mass_temp >> fuel_temp >> fuel_use
+	while (file >> time_temp >> mass_temp >> fuel_temp >> fuel_use
 			>> position_temp.x >> position_temp.y >> position_temp.z
 			>> velocity_temp.x >> velocity_temp.y >> velocity_temp.z
 			>> force_temp.x >> force_temp.y >> force_temp.z
 			>> kin_temp.x >> kin_temp.y >> kin_temp.z
-			>> pot_temp.x >> pot_temp.y >> pot_temp.z;
+			>> pot_temp.x >> pot_temp.y >> pot_temp.z){
 
 		//load all data from the file to corresponding vectors
 		Push_Back(time_temp, mass_temp, fuel_temp, position_temp, velocity_temp, force_temp, kin_temp, pot_temp);
@@ -353,16 +361,11 @@ void Solver::Save_planets() {
 	std::ofstream file;
 	file.open(filename.c_str());
 
-	if (Planet_Num == 0) {
-		file.clear();
-	}
-	else {
-		for (auto& p : Planets) {
+	for (auto& p : Planets) {
 
-			file << p.name << " " << p.mass << " " << p.radius
-				<< " " << p.inertia << " " << p.position.x
-				<< " " << p.position.y << " " << p.position.z << " " << std::endl;
-		}
+		file << p.name << " " << p.mass << " " << p.radius
+			<< " " << p.inertia << " " << p.position.x
+			<< " " << p.position.y << " " << p.position.z << " " << std::endl;
 	}
 
 	file.close();
@@ -370,7 +373,6 @@ void Solver::Save_planets() {
 
 void Solver::Load_planets() {
 
-	Planet_Num = 0;
 	std::string particle_name = Particle.name;
 	std::string filename = "./Simulation_History/Planets/";
 	particle_name.append("_planets.txt");
@@ -381,30 +383,29 @@ void Solver::Load_planets() {
 	//open file
 	file.open(filename.c_str());
 
-	//temporary storage for reading from file
-	std::string name_temp;
-	double mass_temp, radius_temp, inertia_temp;
-	Vector3D position_temp;
+	if (!is_empty(file)) {
 
-	//TODO: fix double reading
-	while (!file.eof()) {
-		file >> name_temp >> mass_temp >> radius_temp >> inertia_temp 
-			>> position_temp.x >> position_temp.y >> position_temp.z;
+		//temporary storage for reading from file
+		std::string name_temp;
+		double mass_temp, radius_temp, inertia_temp;
+		Vector3D position_temp;
 
-		//assign planet's data
-		planet.name = name_temp;
-		planet.mass = mass_temp;
-		planet.radius = radius_temp;
-		planet.inertia = inertia_temp;
-		planet.position = position_temp;
+		while (file >> name_temp >> mass_temp >> radius_temp >> inertia_temp 
+		>> position_temp.x >> position_temp.y >> position_temp.z){
 
-		//load planets to solver vector Planets
-		Planets.push_back(planet);
-		std::cout << "\nPlanet Loaded: \n";
-		planet.Print_info();
-		Planet_Num++;
+			//assign planet's data
+			planet.name = name_temp;
+			planet.mass = mass_temp;
+			planet.radius = radius_temp;
+			planet.inertia = inertia_temp;
+			planet.position = position_temp;
+
+			//load planets to solver vector Planets
+			Planets.push_back(planet);
+			std::cout << "\nPlanet Loaded: \n";
+			planet.Print_info();
+		}
 	}
-
 	file.close();
 }
 
@@ -426,20 +427,22 @@ void Solver::Change_planets() {
 
 		switch (option) {
 		case Add:{
-			Planet planet;
+			Planet planet(true);
 			Planets.push_back(planet);
 			std::cout << "\nPlanet Added: \n";
 			planet.Print_info();
-			Planet_Num++;
 			break;
 		}
 		case Edit: {
 			p.Change_info();
 			break; }
 
-		case Remove: {
+		case Remove: {   
 			Planets.erase(Planets.begin() + i);
-			Planet_Num--;
+			if (Planets.size() == 1) {
+				Planets.clear();
+			}
+
 			break; }
 
 		default: {
@@ -447,9 +450,15 @@ void Solver::Change_planets() {
 			break;
 		}
 		}
+		if (Planets.empty()) break;
 		std::cout << "\nCurrent Planet after changes: " << std::endl;
 		p.Print_info();
 		i++;
-		if (Planet_Num == 1) break;
 	} 
+
+}
+
+bool Solver::is_empty(std::ifstream& pFile)
+{
+	return pFile.peek() == std::ifstream::traits_type::eof();
 }

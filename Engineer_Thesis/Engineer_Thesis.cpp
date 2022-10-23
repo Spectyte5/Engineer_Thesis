@@ -27,13 +27,13 @@ int main()
 	case load:
 		solver.Load_data();
 		solver.Load_planets();
-		std::cout << "Do you want to change parameters of the ship? [y/n]" << std::endl;
+		std::cout << "\nDo you want to change parameters of the ship? [y/n]" << std::endl;
 		std::cin >> change;
 		if (change == 'y') {
 			solver.Change_data();
 		}
 		change = 'n';
-		std::cout << "Do you want to change configuration of planets? [y/n]" << std::endl;
+		std::cout << "\nDo you want to change configuration of planets? [y/n]" << std::endl;
 		std::cin >> change;
 		if (change == 'y') {
 			solver.Change_planets();

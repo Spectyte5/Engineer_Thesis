@@ -11,6 +11,9 @@ public:
 	Vector3D position = { 0,0,0 };
 	std::string name = "";
 	
+	//default 
+	Planet() {}
+
 	//constructor calculating inertia for perfect sphere
 	Planet(double m, double r, double x, double y, double z, std::string n) {
 		mass = m;
@@ -91,7 +94,7 @@ public:
 	}
 
 		//Constructor for user created single planet
-		Planet() {
+		Planet(bool single) {
 			bool CalculateInertia = false;
 			std::cout << "Enter name of the planet: ";
 			std::cin >> name;
