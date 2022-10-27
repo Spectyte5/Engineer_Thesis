@@ -155,25 +155,25 @@ void Solver::Euler() {
 		double fuel_used = Particle.fuel_usage * t;
 		grav_forces.Zero();
 		distance.Zero();
+		Particle.PotentialEnergy.Zero();
 
 		if (!Planets.empty()) { 
 			for (auto& p : Planets) {
 
-				//Recalculate potential energy
-				Particle.PotentialEnergy.Zero();
-
 				//distance between ship and planets
-				distance = Particle.position - p.position;
+				distance.x = abs(Particle.position.x) - (abs(p.position.x) + p.radius);
+				distance.y = abs(Particle.position.y) - (abs(p.position.y) + p.radius);
+				distance.z = abs(Particle.position.z) - (abs(p.position.z) + p.radius);
 
 				//Potential energy
-				Particle.PotentialEnergy.x -= (G * p.mass * Particle.mass) / (p.radius + distance.x);
-				Particle.PotentialEnergy.y -= (G * p.mass * Particle.mass) / (p.radius + distance.y);
-				Particle.PotentialEnergy.z -= (G * p.mass * Particle.mass) / (p.radius + distance.z);
+				Particle.PotentialEnergy.x -= (G * p.mass * Particle.mass) / (distance.x);
+				Particle.PotentialEnergy.y -= (G * p.mass * Particle.mass) / (distance.y);
+				Particle.PotentialEnergy.z -= (G * p.mass * Particle.mass) / (distance.z);
 
 				//gravitational forces
-				grav_forces.x += ((G * p.mass * Particle.mass) / ((p.radius + distance.x) * (p.radius + distance.x)));
-				grav_forces.y += ((G * p.mass * Particle.mass) / ((p.radius + distance.y) * (p.radius + distance.y)));
-				grav_forces.z += ((G * p.mass * Particle.mass) / ((p.radius + distance.z) * (p.radius + distance.z)));
+				grav_forces.x += ((G * p.mass * Particle.mass) / (distance.x * distance.x));
+				grav_forces.y += ((G * p.mass * Particle.mass) / (distance.y * distance.y));
+				grav_forces.z += ((G * p.mass * Particle.mass) / (distance.z * distance.z));
 			}
 
 			//Change initial value of energy and start printing energy
@@ -185,7 +185,6 @@ void Solver::Euler() {
 			}
 
 		}	
-
 			//check engine forces only if particle has a mass
 			if (Particle.mass > 0 ) {
 
