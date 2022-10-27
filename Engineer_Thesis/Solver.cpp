@@ -1,12 +1,90 @@
 #include "Solver.h"
 #include <fstream>
 #include <filesystem>
+#include "../nlohmann/json.hpp"
+
+void Solver::Load_json() {
+
+	std::string json_name;
+	std::ifstream file;
+
+	std::cout << "JSON data available: " << std::endl;
+	const std::filesystem::path path{ ".\\JSON_files\\" };
+
+	for (auto const& dir_entry : std::filesystem::directory_iterator{ path }) {
+		if (dir_entry.is_regular_file() && dir_entry.path().string().ends_with(".json")) {
+			std::cout << dir_entry.path().filename().replace_extension() << '\n'; 
+		}
+	}
+
+	while (1) {
+		std::cout << "Enter JSON filename: " << std::endl;
+		std::cin >> json_name;
+		std::cout << "\n";
+		std::string filename = "./JSON_files/";;
+		filename.append(json_name + ".json");
+		file.open(filename.c_str());
+		if (!file) {
+			std::cin.clear();
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+			filename.clear();
+			std::cout << "\nFile not found\n" << std::endl;
+		}
+		else {
+			break;
+		}
+	}
+
+	using json = nlohmann::json;
+	json data = json::parse(file);
+
+	Particle.name = data["ship"]["name"];
+	Particle.position.x = data["ship"]["position"][0];
+	Particle.position.y = data["ship"]["position"][1];
+	Particle.position.z = data["ship"]["position"][2];
+	Particle.velocity.x = data["ship"]["velocity"][0];
+	Particle.velocity.y = data["ship"]["velocity"][1];
+	Particle.velocity.z = data["ship"]["velocity"][2];
+	Particle.engine.x = data["ship"]["engine"][0];
+	Particle.engine.y = data["ship"]["engine"][1];
+	Particle.engine.z = data["ship"]["engine"][2];
+	Particle.mass = data["ship"]["mass"];
+	Particle.fuel = data["ship"]["fuel"];
+	Particle.fuel_usage = data["ship"]["fuel_usage"];
+
+	Push_Back(0);
+	std::cout << "\nShip loaded: " << std::endl;
+	Particle.Print_info();
+
+
+	for (auto &p : data["planets"]) {
+
+		Planet planet; 
+		planet.name = p["name"];
+		planet.mass = p["mass"];
+		planet.radius = p["radius"];
+		planet.position.x = p["position"][0];
+		planet.position.y = p["position"][1];
+		planet.position.z = p["position"][2];
+		Planets.push_back(planet);
+		std::cout << "\nPlanet Added: \n";
+		planet.Print_info();
+	}
+
+	T = data["data"]["time"];
+	t = data["data"]["interval"];
+	tx = data["data"]["engines"][0];
+	ty = data["data"]["engines"][1];
+	tz = data["data"]["engines"][2];
+
+}
+
+void Solver::Check_Collision() {}
 
 void Solver::Populate() {
 
 	double i=0;
 	int Planet_Num;
-	bool CalculateInertia = false;
 	Planet planet(0, 0, 0, 0, 0, "");
 
 	//Get ammount of planets in sim
@@ -36,25 +114,6 @@ void Solver::Populate() {
 
 		std::cout << "Enter position x,y,z of the planet " << i << " : ";
 		std::cin >> planet.position.x >> planet.position.y >> planet.position.z;
-
-
-		while (std::cout << "Do you want to input inertia?\n 0 = NO \n 1 = YES " && !(std::cin >> CalculateInertia)) {
-			std::cin.clear();
-			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-			std::cout << "Invalid input; please re-enter.\n";
-		}
-
-		if (CalculateInertia) {
-
-			while (std::cout << "Enter inertia of the planet " << i << " : " && !(std::cin >> planet.inertia) || (planet.inertia < 0)) {
-				std::cin.clear();
-				std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-				std::cout << "Invalid input; please re-enter.\n";
-			}
-		}
-		else {
-			planet.inertia = 0.4 * planet.mass * planet.radius * planet.radius;
-		}
 
 		Planets.push_back(planet);
 		std::cout << "\nPlanet Added: \n";
@@ -91,7 +150,7 @@ void Solver::Euler() {
 	Vector3D distance;
 	bool engine_used = false;
 
-	for (double time = t; time < T+t; time += t) {
+	for (double time = t; time < T + t; time += t) {
 
 		double fuel_used = Particle.fuel_usage * t;
 		grav_forces.Zero();
@@ -135,20 +194,23 @@ void Solver::Euler() {
 				engine_used = false;
 
 				//x
-				if (time >= tx && Particle.fuel > 0 && Particle.force.x != 0) {
-					Particle.velocity.x += ((Particle.force.x + grav_forces.x) / Particle.mass) * t;
+				if (time >= tx && Particle.fuel > 0 && Particle.engine.x != 0) {
+					Particle.force.x = Particle.engine.x + grav_forces.x;
+					Particle.velocity.x += (Particle.force.x / Particle.mass) * t;
 					engine_used = true;
 				}
 
 				//y 
-				if (time >= ty && Particle.fuel > 0 && Particle.force.y != 0) {
-					Particle.velocity.y += ((Particle.force.y + grav_forces.y) / Particle.mass) * t;
+				if (time >= ty && Particle.fuel > 0 && Particle.engine.y != 0) {
+					Particle.force.y = Particle.engine.y + grav_forces.y;
+					Particle.velocity.y += (Particle.force.y / Particle.mass) * t;
 					engine_used = true;
 				}
 
 				//z
-				if (time >= tz && Particle.fuel > 0 && Particle.force.z != 0) {
-					Particle.velocity.z += ((Particle.force.z + grav_forces.z) / Particle.mass) * t;
+				if (time >= tz && Particle.fuel > 0 && Particle.engine.z != 0) {
+					Particle.force.z = Particle.engine.z + grav_forces.z;
+					Particle.velocity.z += (Particle.force.z / Particle.mass) * t;
 					engine_used = true;
 				}
 
@@ -160,9 +222,10 @@ void Solver::Euler() {
 
 				//if engines not used change velocity because of gravitational forces
 				else {
-					Particle.velocity.x += (grav_forces.x / Particle.mass) * t;
-					Particle.velocity.y += (grav_forces.y / Particle.mass) * t;
-					Particle.velocity.z += (grav_forces.z / Particle.mass) * t;
+					Particle.force = grav_forces;
+					Particle.velocity.x += (Particle.force.x / Particle.mass) * t;
+					Particle.velocity.y += (Particle.force.y / Particle.mass) * t;
+					Particle.velocity.z += (Particle.force.z / Particle.mass) * t;
 				}
 			}
 
@@ -198,6 +261,7 @@ void Solver::Save_data() {
 		file << time_data[t] << " " << mass_data[t] << " " << fuel_data[t] << " " << Particle.fuel_usage
 			<< " " << position_data[t].x << " " << position_data[t].y << " " << position_data[t].z
 			<< " " << velocity_data[t].x << " " << velocity_data[t].y << " " << velocity_data[t].z
+			<< " " << engine_data[t].x << " " << engine_data[t].y << " " << engine_data[t].z
 			<< " " << force_data[t].x << " " << force_data[t].y << " " << force_data[t].z 
 			<< " " << kinetic_data[t].x << " " << kinetic_data[t].y << " " << kinetic_data[t].z
 			<< " " << potential_data[t].x << " " << potential_data[t].y << " " << potential_data[t].z
@@ -244,17 +308,18 @@ void Solver::Load_data() {
 	
 	//temporary storage for reading from file
 	double time_temp, mass_temp, fuel_temp, fuel_use;
-	Vector3D position_temp, velocity_temp, force_temp, kin_temp, pot_temp;
+	Vector3D position_temp, velocity_temp, engine_temp, force_temp, kin_temp, pot_temp;
 
 	while (file >> time_temp >> mass_temp >> fuel_temp >> fuel_use
 			>> position_temp.x >> position_temp.y >> position_temp.z
 			>> velocity_temp.x >> velocity_temp.y >> velocity_temp.z
+			>> engine_temp.x >> engine_temp.y >> engine_temp.z
 			>> force_temp.x >> force_temp.y >> force_temp.z
 			>> kin_temp.x >> kin_temp.y >> kin_temp.z
 			>> pot_temp.x >> pot_temp.y >> pot_temp.z){
 
 		//load all data from the file to corresponding vectors
-		Push_Back(time_temp, mass_temp, fuel_temp, position_temp, velocity_temp, force_temp, kin_temp, pot_temp);
+		Push_Back(time_temp, mass_temp, fuel_temp, position_temp, velocity_temp, engine_temp, force_temp, kin_temp, pot_temp);
 	}
 
 		//set particle to initial value if user wants to run the same simulation again
@@ -270,6 +335,10 @@ void Solver::Load_data() {
 		Particle.velocity.x = velocity_data[0].x;
 		Particle.velocity.y = velocity_data[0].y;
 		Particle.velocity.z = velocity_data[0].z;
+
+		Particle.engine.x = force_data[0].x;
+		Particle.engine.y = force_data[0].y;
+		Particle.engine.z = force_data[0].z;
 
 		Particle.force.x = force_data[0].x;
 		Particle.force.y = force_data[0].y;
@@ -287,18 +356,20 @@ void Solver::Push_Back(double time) {
 	fuel_data.push_back(Particle.fuel);
 	position_data.push_back(Particle.position);
 	velocity_data.push_back(Particle.velocity);
+	engine_data.push_back(Particle.engine);
 	force_data.push_back(Particle.force);
 	kinetic_data.push_back(Particle.KineticEnergy);
 	potential_data.push_back(Particle.PotentialEnergy);
 }
 
-void Solver::Push_Back(double time, double mass, double fuel, Vector3D position, Vector3D velocity, Vector3D force, Vector3D kinetic_energy, Vector3D potential_energy){
+void Solver::Push_Back(double time, double mass, double fuel, Vector3D position, Vector3D velocity, Vector3D engine, Vector3D force, Vector3D kinetic_energy, Vector3D potential_energy){
 
 	time_data.push_back(time);
 	mass_data.push_back(mass);
 	fuel_data.push_back(fuel);
 	position_data.push_back(position);
 	velocity_data.push_back(velocity);
+	engine_data.push_back(engine);
 	force_data.push_back(force);
 	kinetic_data.push_back(kinetic_energy);
 	potential_data.push_back(potential_energy);
@@ -363,8 +434,7 @@ void Solver::Save_planets() {
 
 	for (auto& p : Planets) {
 
-		file << p.name << " " << p.mass << " " << p.radius
-			<< " " << p.inertia << " " << p.position.x
+		file << p.name << " " << p.mass << " " << p.radius << " " << p.position.x
 			<< " " << p.position.y << " " << p.position.z << " " << std::endl;
 	}
 
@@ -387,17 +457,16 @@ void Solver::Load_planets() {
 
 		//temporary storage for reading from file
 		std::string name_temp;
-		double mass_temp, radius_temp, inertia_temp;
+		double mass_temp, radius_temp;
 		Vector3D position_temp;
 
-		while (file >> name_temp >> mass_temp >> radius_temp >> inertia_temp 
-		>> position_temp.x >> position_temp.y >> position_temp.z){
+		while (file >> name_temp >> mass_temp >> radius_temp >> 
+		position_temp.x >> position_temp.y >> position_temp.z){
 
 			//assign planet's data
 			planet.name = name_temp;
 			planet.mass = mass_temp;
 			planet.radius = radius_temp;
-			planet.inertia = inertia_temp;
 			planet.position = position_temp;
 
 			//load planets to solver vector Planets

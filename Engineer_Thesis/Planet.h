@@ -7,34 +7,25 @@ public:
 
 	double mass = 0;
 	double radius = 0;
-	double inertia = 0;
 	Vector3D position = { 0,0,0 };
 	std::string name = "";
 	
 	//default 
 	Planet() {}
 
-	//constructor calculating inertia for perfect sphere
+	//object constructor
 	Planet(double m, double r, double x, double y, double z, std::string n) {
 		mass = m;
 		radius = r;
-		inertia = 0.4 * mass * radius * radius;
 		name = n;
-	}
-	//constructor with custom inertia
-	Planet(double m, double r, double x, double y, double z, std::string n ,double i) {
-		mass = m;
-		radius = r;
-		inertia = i;
-		position = { x, y, z };
 	}
 
 	void Print_info(){
-		std::cout << "Name: " << name << "\nMass: " << mass << "\nRadius: " << radius << "\nInertia: " << inertia << "\nPosition: " << position << std::endl;
+		std::cout << "Name: " << name << "\nMass: " << mass << "\nRadius: " << radius  << "\nPosition: " << position << std::endl;
 	}
 
 	void Change_info() {
-		bool CalculateInertia = false;
+
 		char choice = 'n';
 		std::cout << "Data changing of the particle ";
 		std::cout << "Do you wish to change name? [y/n]";
@@ -78,24 +69,10 @@ public:
 			std::cout << "Enter position x,y,z of the planet: ";
 			std::cin >> position.x >> position.y >> position.z;
 		}
-
-		std::cout << "Do you wish to change inertia? [y/n]";
-		std::cin >> choice;
-		if (choice == 'y') {
-			while (std::cout << "Enter inertia of the planet: " && !(std::cin >> inertia) || (inertia < 0)) {
-				std::cin.clear();
-				std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-				std::cout << "Invalid input; please re-enter.\n";
-			}
-		}
-		else {
-			inertia = 0.4 * mass * radius * radius;
-		}
 	}
 
 		//Constructor for user created single planet
 		Planet(bool single) {
-			bool CalculateInertia = false;
 			std::cout << "Enter name of the planet: ";
 			std::cin >> name;
 
@@ -113,24 +90,5 @@ public:
 
 			std::cout << "Enter position x,y,z of the planet: ";
 			std::cin >> position.x >> position.y >> position.z;
-
-
-			while (std::cout << "Do you want to input inertia?\n 0 = NO \n 1 = YES " && !(std::cin >> CalculateInertia)) {
-				std::cin.clear();
-				std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-				std::cout << "Invalid input; please re-enter.\n";
-			}
-
-			if (CalculateInertia) {
-
-				while (std::cout << "Enter inertia of the planet: " && !(std::cin >> inertia) || (inertia < 0)) {
-					std::cin.clear();
-					std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-					std::cout << "Invalid input; please re-enter.\n";
-				}
-			}
-			else {
-				inertia = 0.4 * mass * radius * radius;
-			}
 		}
 };

@@ -30,7 +30,7 @@ public:
 		 solver.tz = time_z;
 	 }
 
-	bool CheckShip(double rx, double ry, double rz, double vx, double vy, double vz, double fx, double fy, double fz, double m) {
+	bool CheckShip(double rx, double ry, double rz, double vx, double vy, double vz, double ex, double ey, double ez, double fx, double fy, double fz, double m) {
 
 		//mass
 		if (solver.Particle.mass != m) return false;
@@ -41,14 +41,18 @@ public:
 		//velocities
 		if (!solver.Particle.velocity.VectorsEqual({ vx, vy, vz })) return false;
 
+		//engine
+		if (!solver.Particle.engine.VectorsEqual({ ex, ey, ez })) return false;
+
 		//forces
 		if (!solver.Particle.force.VectorsEqual({ fx, fy, fz })) return false;
+
 		return true;
 	}
 
-	void Set_Stats(double rx, double ry, double rz, double vx, double vy, double vz, double fx, double fy, double fz, double m, double f, double u) {
+	void Set_Stats(double rx, double ry, double rz, double vx, double vy, double vz, double ex, double ey, double ez, double m, double f, double u) {
 
-		solver.Particle = Point_Particle("Test", rx, ry, rz, vx, vy, vz, fx, fy, fz, m, f, u);
+		solver.Particle = Point_Particle("Test", rx, ry, rz, vx, vy, vz, ex, ey, ez, m, f, u);
 		//take fuel mass into account
 		solver.Particle.mass += solver.Particle.fuel;
 	}
@@ -71,21 +75,21 @@ TEST_F(SolverTest, EulerFunctionMassOnly) {
 	SetUp();
 	Set_Stats(0, 0, 0, 0, 0, 0, 0, 0, 0, 1000, 0, 0);
 	solver.Euler();
-	ASSERT_TRUE(CheckShip(0, 0, 0, 0, 0, 0, 0, 0, 0, 1000));
+	ASSERT_TRUE(CheckShip(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000));
 }
 
 TEST_F(SolverTest, EulerFunctionNoEngineNoPlanets) {
 	SetUp(1, 10);
 	Set_Stats(0, 0, 0, 10, 10, 10, 0, 0, 0, 1000, 0, 0);
 	solver.Euler();
-	ASSERT_TRUE(CheckShip(100, 100, 100, 10, 10, 10, 0, 0, 0, 1000));
+	ASSERT_TRUE(CheckShip(100, 100, 100, 10, 10, 10, 0, 0, 0, 0, 0, 0, 1000));
 }
 
 TEST_F(SolverTest, EulerFunctionWithEngineNoPlanets) {
 	SetUp(1, 10, 10, 10, 10);
 	Set_Stats(0, 0, 0, 0, 0, 0, 2000, 2000, 2000, 500, 500, 100);
 	solver.Euler();
-	ASSERT_TRUE(CheckShip(2, 2, 2, 2, 2, 2, 2000, 2000, 2000, 900));
+	ASSERT_TRUE(CheckShip(2, 2, 2, 2, 2, 2, 2000, 2000, 2000, 2000, 2000, 2000, 900));
 }
 //fix:
 /*
