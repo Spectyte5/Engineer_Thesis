@@ -3,35 +3,43 @@
 #include <filesystem>
 #include "../nlohmann/json.hpp"
 
-void Solver::Load_json() {
-
-	std::string json_name;
+void Solver::Load_json(std::string filename) {
+	
 	std::ifstream file;
-
-	std::cout << "JSON data available: " << std::endl;
-	const std::filesystem::path path{ ".\\JSON_files\\" };
-
-	for (auto const& dir_entry : std::filesystem::directory_iterator{ path }) {
-		if (dir_entry.is_regular_file() && dir_entry.path().string().ends_with(".json")) {
-			std::cout << dir_entry.path().filename().replace_extension() << '\n'; 
-		}
+	
+	if (filename != "") {
+		file.open(filename);
 	}
+		
+	else {
+		//TODO: consider function to show and open files
+		std::string json_name;
 
-	while (1) {
-		std::cout << "Enter JSON filename: " << std::endl;
-		std::cin >> json_name;
-		std::cout << "\n";
-		std::string filename = "./JSON_files/";;
-		filename.append(json_name + ".json");
-		file.open(filename.c_str());
-		if (!file) {
-			std::cin.clear();
-			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-			filename.clear();
-			std::cout << "\nFile not found\n" << std::endl;
+		std::cout << "JSON data available: " << std::endl;
+		const std::filesystem::path path{ ".\\JSON_files\\" };
+
+		for (auto const& dir_entry : std::filesystem::directory_iterator{ path }) {
+			if (dir_entry.is_regular_file() && dir_entry.path().string().ends_with(".json")) {
+				std::cout << dir_entry.path().filename().replace_extension() << '\n';
+			}
 		}
-		else {
-			break;
+
+		while (1) {
+			std::cout << "Enter JSON filename: " << std::endl;
+			std::cin >> json_name;
+			std::cout << "\n";
+			std::string filename = "./JSON_files/";;
+			filename.append(json_name + ".json");
+			file.open(filename.c_str());
+			if (!file) {
+				std::cin.clear();
+				std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+				filename.clear();
+				std::cout << "\nFile not found\n" << std::endl;
+			}
+			else {
+				break;
+			}
 		}
 	}
 
@@ -77,9 +85,37 @@ void Solver::Load_json() {
 	ty = data["data"]["engines"][1];
 	tz = data["data"]["engines"][2];
 
+	file.close();
 }
 
-void Solver::Check_Collision() {}
+bool Solver::Check_Collision(Planet& Planet) {
+
+	double x1 = pow((Particle.position.x - Planet.position.x), 2);
+	double y1 = pow((Particle.position.y - Planet.position.y), 2);
+	double z1 = pow((Particle.position.z - Planet.position.z), 2);
+
+	// distance between the centre and given point
+	double distance = x1 + y1 + z1;
+
+	if (distance < (Planet.radius * Planet.radius)) {
+		std::cout << "\nShip: " << Particle.name <<  ", has crashed into Planet: " << Planet.name 
+		<< " !\n********************************************************" << std::endl;
+		return true;
+	}
+
+	// distance btw centre and point is equal to radius
+	else if (distance == (Planet.radius * Planet.radius)) {
+
+		//if it is on surface it can be a start from the planet and 
+		//trying to escape the orbit, so i return it as not a full collistion, 
+		//but if distance decreases (ship goes into the planet) collisition will trigger.
+		std::cout << "\nShip: " << Particle.name << ", is located on Planet: " << " Surface" << Planet.name << "!" << std::endl;
+		return false; 
+	}
+
+	// distance btw center and point is greater than radius
+	else return false;
+}
 
 void Solver::Populate() {
 
@@ -160,10 +196,15 @@ void Solver::Euler() {
 		if (!Planets.empty()) { 
 			for (auto& p : Planets) {
 
+				//check if ship collides with the planet
+				if (Check_Collision(p)) {
+					exit(0); //stop simulation
+				}
+
 				//distance between ship and planets
-				distance.x = abs(Particle.position.x) - (abs(p.position.x) + p.radius);
-				distance.y = abs(Particle.position.y) - (abs(p.position.y) + p.radius);
-				distance.z = abs(Particle.position.z) - (abs(p.position.z) + p.radius);
+				distance.x = abs(Particle.position.x - p.position.x);
+				distance.y = abs(Particle.position.y - p.position.y);
+				distance.z = abs(Particle.position.z - p.position.z);
 
 				//Potential energy
 				Particle.PotentialEnergy.x -= (G * p.mass * Particle.mass) / (distance.x);

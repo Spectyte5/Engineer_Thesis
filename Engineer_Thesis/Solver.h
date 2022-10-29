@@ -15,9 +15,9 @@ public:
 	double T = 0, t = 0, tx = 0, ty = 0, tz = 0;
 
 	//check if there are collistions
-	void Check_Collision();
+	bool Check_Collision(Planet& Planet);
 	//load data from json format
-	void Load_json();
+	void Load_json(std::string filename);
 	//define planets in simulation
 	void Populate();
 	//Setup simulation
