@@ -15,7 +15,7 @@ void Solver::Write_initial() {
 			Particle.engine.z = TimeVect.front().engforce.z;
 		}
 	}
-	Push_Back(0);
+	Push_Back();
 }
 
 void Solver::Populate() {
@@ -63,14 +63,14 @@ void Solver::Setup() {
 	Particle.User_set(); //setup particle
 	Populate(); //setup planets
 	short int interval_num=0;
-	EngineTimes interval;
+	Control interval;
 
 	while (std::cout << "Input a time of motion: " && !(std::cin >> T) || (T < 0)) {
 		std::cin.clear();
 		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		std::cout << "Invalid input; please re-enter.\n";
 	}
-	while (std::cout << "Input a time step size (Time between measurments): " && !(std::cin >> t) || (t < 0 || t > T)) {
+	while (std::cout << "Input a time step size (Time between measurments): " && !(std::cin >> step) || (step < 0 || step > T)) {
 		std::cin.clear();
 		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		std::cout << "Invalid input; please re-enter.\n";
@@ -85,25 +85,22 @@ void Solver::Setup() {
 	}
 
 	//fill all intervals until input is correct
-	for (int i = 0; i < interval_num && interval.Check_input(); i++) {
+	for (int i = 0; i < interval_num ; i++) {
 
-		std::cout << "Interval  " << i << ": Enter time of turning on the engines (x y z): " << std::endl;
+		std::cout << "Interval " << i << ": Enter time of turning on the engines (x y z): " << std::endl;
 		std::cin >> interval.timestart.x >> interval.timestart.y >> interval.timestart.z;
 
-		std::cout << "Interval  " << i << ": Enter time of turning off the engines (x y z): " << std::endl;
+		std::cout << "Interval " << i << ": Enter time of turning off the engines (x y z): " << std::endl;
 		std::cin >> interval.timeend.x >> interval.timeend.y >> interval.timeend.z;
 
-		std::cout << "Interval  " << i << ": Enter engine force at this interval (x y z): " << std::endl;
+		std::cout << "Interval " << i << ": Enter engine force at this interval (x y z): " << std::endl;
 		std::cin >> interval.engforce.x >> interval.engforce.y >> interval.engforce.z;
 
-		if (interval.Check_input()) {
+		if (interval.Check_input(*this)) {
 				TimeVect.push_back(interval);
 				interval.Print_Interval();
 		}
-		else {
-			TimeVect.push_back(interval);  //TODO: fix this check input, because for now it does not work
-			interval.Print_Interval();
-		}
+		else { i--; }
 	}
 
 	//write initial values to vectors
@@ -136,21 +133,21 @@ void Solver::Save_json() {
 		data["planets"][i]["position"][1] = p.position.y;
 		data["planets"][i]["position"][2] = p.position.z;
 	}
-	for (auto& t : TimeVect) {
-		auto i = &t - &TimeVect[0];
-		data["control"][i]["starttime"][0] = t.timestart.x;
-		data["control"][i]["starttime"][1] = t.timestart.y;
-		data["control"][i]["starttime"][2] = t.timestart.z;
-		data["control"][i]["endtime"][0] = t.timeend.x;
-		data["control"][i]["endtime"][1] = t.timeend.y;
-		data["control"][i]["endtime"][2] = t.timeend.z;
-		data["control"][i]["force"][0] = t.engforce.x;
-		data["control"][i]["force"][1] = t.engforce.y;
-		data["control"][i]["force"][2] = t.engforce.z;
+	for (auto& step : TimeVect) {
+		auto i = &step - &TimeVect[0];
+		data["control"][i]["starttime"][0] = step.timestart.x;
+		data["control"][i]["starttime"][1] = step.timestart.y;
+		data["control"][i]["starttime"][2] = step.timestart.z;
+		data["control"][i]["endtime"][0] = step.timeend.x;
+		data["control"][i]["endtime"][1] = step.timeend.y;
+		data["control"][i]["endtime"][2] = step.timeend.z;
+		data["control"][i]["force"][0] = step.engforce.x;
+		data["control"][i]["force"][1] = step.engforce.y;
+		data["control"][i]["force"][2] = step.engforce.z;
 	}
 
 	data["data"]["time"] = T;
-	data["data"]["step"] = t;
+	data["data"]["step"] = step;
 
 	std::string path = "./JSON_files/" + Particle.name + ".json";
 	std::ofstream file(path.c_str());
@@ -232,7 +229,7 @@ void Solver::Load_data(std::string& filename) {
 
 	for (auto& c : data["control"]) {
 
-		EngineTimes interval;
+		Control interval;
 		//engine interval start
 		interval.timestart = { c["starttime"][0], c["starttime"][1], c["starttime"][2] };
 		//engine interval end
@@ -246,11 +243,10 @@ void Solver::Load_data(std::string& filename) {
 		interval.Print_Interval();
 	}
 
-	Write_initial();
-
 	T = data["data"]["time"];
-	t = data["data"]["step"];
+	step = data["data"]["step"];
 
+	Write_initial();
 	file.close();
 }
 
@@ -289,9 +285,17 @@ bool Solver::UseEngine(double& time) {
 	for (auto& i : TimeVect) {
 
 		used = false;
+		
+		//first check if there is fuel:
+		if (Particle.fuel <= 0) {
+			std::cout << "\nRun Out of fuel, engines won't be used from now on..." << std::endl;
+			TimeVect.clear(); //if there is no fuel there is no reason to check engine usage
+			break;
+		}
+
 		//check if simulation step is contained in one of the intervals
 		//x
-		if (time >= i.timestart.x && time <= i.timeend.x) {
+		if (time >= i.timestart.x && time <= i.timeend.x ) {
 			Particle.engine.x = i.engforce.x; //if yes turn on the engine
 			used = true;
 		}
@@ -323,9 +327,9 @@ void Solver::Euler() {
 	Vector3D distance;
 	bool engine_used = false;
 
-	for (double time = t; time < T + t; time += t) {
+	for (time = step; time < T + step; time += step) {
 
-		double fuel_used = Particle.fuel_usage * t;
+		double fuel_used = Particle.fuel_usage * step;
 		grav_forces.Zero();
 		distance.Zero();
 		Particle.PotentialEnergy.Zero();
@@ -351,7 +355,7 @@ void Solver::Euler() {
 			}
 
 			//Change initial value of energy and start printing energy
-			if (time == t) {
+			if (time == step) {
 				Particle.KineticEnergy = { Particle.velocity.x * Particle.mass / 2, Particle.velocity.y * Particle.mass / 2 , Particle.velocity.z * Particle.mass / 2 };
 				kinetic_data.front() = Particle.KineticEnergy;
 				potential_data.front() = Particle.PotentialEnergy;
@@ -379,7 +383,7 @@ void Solver::Euler() {
 			}
 			//calculate velocites
 			Particle.force = { Particle.engine.x + grav_forces.x , grav_forces.y + Particle.engine.y, grav_forces.z + Particle.engine.z };
-			Particle.velocity += {(Particle.force.x / Particle.mass) * t, (Particle.force.y / Particle.mass) * t, (Particle.force.z / Particle.mass) * t };
+			Particle.velocity += {(Particle.force.x / Particle.mass) * step, (Particle.force.y / Particle.mass) * step, (Particle.force.z / Particle.mass) * step };
 			}
 
 		//position
@@ -392,7 +396,7 @@ void Solver::Euler() {
 		Particle.KineticEnergy = { Particle.velocity.x * Particle.mass / 2, Particle.velocity.y * Particle.mass / 2 , Particle.velocity.z * Particle.mass / 2 };
 		
 		//save values to vectors
-		Push_Back(time);
+		Push_Back();
 	}
 
 	//display information at the end of motion:
@@ -400,7 +404,7 @@ void Solver::Euler() {
 	Particle.Print_info();
 }
 
-void Solver::Push_Back(double time) {
+void Solver::Push_Back() {
 
 	time_data.push_back(time);
 	mass_data.push_back(Particle.mass);
@@ -432,15 +436,15 @@ void Solver::Save_data() {
 		<< " EKinx[J]" << " EKiny[J]" << " EKinz[J]"
 		<< " EPotx[J]" << " EPoty[J]" << " EPotz[J]" << std::endl;
 
-	for (auto t = 0; t < time_data.size(); t++) {
+	for (auto step = 0; step < time_data.size(); step++) {
 
-		file << time_data[t] << " " << mass_data[t] << " " << fuel_data[t] << " " << Particle.fuel_usage
-			<< " " << position_data[t].x << " " << position_data[t].y << " " << position_data[t].z
-			<< " " << velocity_data[t].x << " " << velocity_data[t].y << " " << velocity_data[t].z
-			<< " " << engine_data[t].x << " " << engine_data[t].y << " " << engine_data[t].z
-			<< " " << force_data[t].x << " " << force_data[t].y << " " << force_data[t].z 
-			<< " " << kinetic_data[t].x << " " << kinetic_data[t].y << " " << kinetic_data[t].z
-			<< " " << potential_data[t].x << " " << potential_data[t].y << " " << potential_data[t].z
+		file << time_data[step] << " " << mass_data[step] << " " << fuel_data[step] << " " << Particle.fuel_usage
+			<< " " << position_data[step].x << " " << position_data[step].y << " " << position_data[step].z
+			<< " " << velocity_data[step].x << " " << velocity_data[step].y << " " << velocity_data[step].z
+			<< " " << engine_data[step].x << " " << engine_data[step].y << " " << engine_data[step].z
+			<< " " << force_data[step].x << " " << force_data[step].y << " " << force_data[step].z 
+			<< " " << kinetic_data[step].x << " " << kinetic_data[step].y << " " << kinetic_data[step].z
+			<< " " << potential_data[step].x << " " << potential_data[step].y << " " << potential_data[step].z
 			<< std::endl;
 	}
 	file.close();

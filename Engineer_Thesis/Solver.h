@@ -4,7 +4,7 @@
 #include <fstream>
 
 //forward declare class
-class EngineTimes;
+class Control;
 
 class Solver {
 
@@ -13,11 +13,11 @@ public:
 	std::vector <double> time_data, mass_data, fuel_data;
 	std::vector <Vector3D> position_data, velocity_data, engine_data, force_data, kinetic_data, potential_data;
 	std::vector <Planet> Planets;
-	std::vector <EngineTimes> TimeVect;
+	std::vector <Control> TimeVect;
 	Point_Particle Particle = Point_Particle("", 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
-	//T is time of simulation, t is time step
-	double T = 0, t = 0;
+	//T is time of simulation, step is time step and time is current simulation time
+	double T = 0, step = 0, time = 0;
 
 	//save intial values to corresponding vectors
 	void Write_initial();
@@ -38,7 +38,7 @@ public:
 	//Solver using Euler method
 	void Euler();
 	//save values to vectors
-	void Push_Back(double time);
+	void Push_Back();
 	//Save simulation data to file
 	void Save_data();
 	//Save planet configuration to a file
@@ -51,33 +51,34 @@ public:
 };
 
 //class that will hold time intervals when forces are used;
-class EngineTimes : public Solver {
+class Control{
 
 public:
 	Vector3D timestart= { 0,0,0 }, timeend = { 0,0,0 }, engforce = { 0,0,0 };
 	
-	EngineTimes() {};
+	Control() {};
 
 	void Print_Interval() {
 		std::cout << "\nStart times(x,y,z): " << timestart << " s"
 			<< "\nEnd times(x,y,z): " << timeend << " s"
 			<< "\nEngine force(x,y,z): " << engforce << " N" << std::endl;
 	}
-	bool Check_input() {
+	bool Check_input(Solver& solver) {
 		//check input:
 			//initial check:
-		if (TimeVect.empty()) {
+		if (solver.TimeVect.empty()) {
 			//timestart 
 			if (timestart.x < 0 || timestart.y < 0 || timestart.z < 0) return false;
 			//timeend
-			if (timeend.x > T || timeend.y > T || timeend.z > T) return false;
+			if (timeend.x > solver.T || timeend.y > solver.T || timeend.z > solver.T) return false;
+			if (timeend.x < timestart.x || timeend.y < timestart.y || timeend.z < timestart.z) return false;
 		}
 		else {
 			if (timestart.x < 0 || timestart.y < 0 || timestart.z < 0) return false;
-			if (timeend.x > T || timeend.y > T || timeend.z > T) return false;
+			if (timeend.x > solver.T || timeend.y > solver.T || timeend.z > solver.T) return false;
+			if (timeend.x < timestart.x || timeend.y < timestart.y || timeend.z < timestart.z) return false;
 			//check if interval does not intersect previous interval
-			if (timestart.x < TimeVect.back().timestart.x || timestart.y < TimeVect.back().timestart.y || timestart.z < TimeVect.back().timestart.z) return false;
-			if (timeend.x < TimeVect.back().timeend.x || timeend.y < TimeVect.back().timeend.y || timeend.z < TimeVect.back().timeend.z) return false;
+			if (timestart.x < solver.TimeVect.back().timeend.x || timestart.y < solver.TimeVect.back().timeend.y || timestart.z < solver.TimeVect.back().timeend.z) return false;
 		}
 		//if all conditions are satisfied return true
 		return true;

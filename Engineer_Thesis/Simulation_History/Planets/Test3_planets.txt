@@ -1,0 +1,1 @@
+Name Mass[kg] Radius[m] Posx(t)[m] Posy(t)[m] Posz(t)[m]

@@ -8,12 +8,12 @@ public:
 
 	void SetUp() {
 		solver.T = 10;
-		solver.t = 1;
+		solver.step = 1;
 	}
 
 	void SetUp(double step, double time) {
 		 solver.T = time;
-		 solver.t = step;
+		 solver.step = step;
 	} 
 
 	bool CheckShip(double rx, double ry, double rz, double vx, double vy, double vz, double ex, double ey, double ez, double fx, double fy, double fz, double m) {
@@ -45,7 +45,7 @@ public:
 
 	void Engine_Set(Vector3D timestart, Vector3D timeend, Vector3D force) {
 
-		EngineTimes interval;
+		Control interval;
 		interval.timestart = timestart;
 		interval.timeend = timeend;
 		interval.engforce = force;
