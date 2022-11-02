@@ -15,7 +15,7 @@ for f in files:
 name = input("Enter name of the data file for visualization: ")
 
 with open('../Engineer_Thesis/Simulation_History/Ships/%s.txt' % name) as f:
-    lines = f.readlines()
+    lines = f.readlines()[1: ]
     time = [float(line.split()[0]) for line in lines]
     mass = [float(line.split()[1]) for line in lines]
     fuel = [float(line.split()[2]) for line in lines]   

@@ -1,6 +1,6 @@
 #include "Vehicle.h"
 
-Point_Particle::Point_Particle(std::string n, double rx, double ry, double rz, double vx, double vy, double vz, double ex, double ey, double ez, double m, double f, double u) {
+Point_Particle::Point_Particle(std::string n, double rx, double ry, double rz, double vx, double vy, double vz, double m, double f, double u) {
 
 	//name 
 	name = n;
@@ -10,9 +10,6 @@ Point_Particle::Point_Particle(std::string n, double rx, double ry, double rz, d
 
 	//velocities
 	velocity = { vx, vy, vz };
-	
-	//forces
-	engine = { ex, ey, ez };
 	
 	//mass
 	mass = m;
@@ -50,8 +47,6 @@ void Point_Particle::User_set() {
 	std::cin >> position.x >> position.y >> position.z;
 	std::cout << "Input velocity x,y,z in m/s with - to change direction: ";
 	std::cin >> velocity.x >> velocity.y >> velocity.z;
-	std::cout << "Input engine force x,y,z in N with - to change direction: ";
-	std::cin >> engine.x >> engine.y >> engine.z;
 	std::cout << "Input fuel mass: ";
 	std::cin >> fuel;
 	std::cout << "Input fuel usage in kg/s: ";

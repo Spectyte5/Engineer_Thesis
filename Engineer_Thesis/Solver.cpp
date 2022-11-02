@@ -1,126 +1,27 @@
 #include "Solver.h"
-#include <fstream>
 #include <filesystem>
 #include "../nlohmann/json.hpp"
 
-void Solver::Load_json(std::string filename) {
-	
-	std::ifstream file;
-	
-	if (filename != "") {
-		file.open(filename);
-	}
-		
-	else {
-		//TODO: consider function to show and open files
-		std::string json_name;
+void Solver::Write_initial() {
 
-		std::cout << "JSON data available: " << std::endl;
-		const std::filesystem::path path{ ".\\JSON_files\\" };
-
-		for (auto const& dir_entry : std::filesystem::directory_iterator{ path }) {
-			if (dir_entry.is_regular_file() && dir_entry.path().string().ends_with(".json")) {
-				std::cout << dir_entry.path().filename().replace_extension() << '\n';
-			}
+	if (!TimeVect.empty()) {
+		if (TimeVect.front().timestart.x == 0) {
+			Particle.engine.x = TimeVect.front().engforce.x;
 		}
-
-		while (1) {
-			std::cout << "Enter JSON filename: " << std::endl;
-			std::cin >> json_name;
-			std::cout << "\n";
-			std::string filename = "./JSON_files/";;
-			filename.append(json_name + ".json");
-			file.open(filename.c_str());
-			if (!file) {
-				std::cin.clear();
-				std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-				filename.clear();
-				std::cout << "\nFile not found\n" << std::endl;
-			}
-			else {
-				break;
-			}
+		if (TimeVect.front().timestart.y == 0) {
+			Particle.engine.y = TimeVect.front().engforce.y;
+		}
+		if (TimeVect.front().timestart.z == 0) {
+			Particle.engine.z = TimeVect.front().engforce.z;
 		}
 	}
-
-	using json = nlohmann::json;
-	json data = json::parse(file);
-
-	Particle.name = data["ship"]["name"];
-	Particle.position.x = data["ship"]["position"][0];
-	Particle.position.y = data["ship"]["position"][1];
-	Particle.position.z = data["ship"]["position"][2];
-	Particle.velocity.x = data["ship"]["velocity"][0];
-	Particle.velocity.y = data["ship"]["velocity"][1];
-	Particle.velocity.z = data["ship"]["velocity"][2];
-	Particle.engine.x = data["ship"]["engine"][0];
-	Particle.engine.y = data["ship"]["engine"][1];
-	Particle.engine.z = data["ship"]["engine"][2];
-	Particle.mass = data["ship"]["mass"];
-	Particle.fuel = data["ship"]["fuel"];
-	Particle.fuel_usage = data["ship"]["fuel_usage"];
-
 	Push_Back(0);
-	std::cout << "\nShip loaded: " << std::endl;
-	Particle.Print_info();
-
-
-	for (auto &p : data["planets"]) {
-
-		Planet planet; 
-		planet.name = p["name"];
-		planet.mass = p["mass"];
-		planet.radius = p["radius"];
-		planet.position.x = p["position"][0];
-		planet.position.y = p["position"][1];
-		planet.position.z = p["position"][2];
-		Planets.push_back(planet);
-		std::cout << "\nPlanet Added: \n";
-		planet.Print_info();
-	}
-
-	T = data["data"]["time"];
-	t = data["data"]["interval"];
-	tx = data["data"]["engines"][0];
-	ty = data["data"]["engines"][1];
-	tz = data["data"]["engines"][2];
-
-	file.close();
-}
-
-bool Solver::Check_Collision(Planet& Planet) {
-
-	double x1 = pow((Particle.position.x - Planet.position.x), 2);
-	double y1 = pow((Particle.position.y - Planet.position.y), 2);
-	double z1 = pow((Particle.position.z - Planet.position.z), 2);
-
-	// distance between the centre and given point
-	double distance = x1 + y1 + z1;
-
-	if (distance < (Planet.radius * Planet.radius)) {
-		std::cout << "\nShip: " << Particle.name <<  ", has crashed into Planet: " << Planet.name 
-		<< " !\n********************************************************" << std::endl;
-		return true;
-	}
-
-	// distance btw centre and point is equal to radius
-	else if (distance == (Planet.radius * Planet.radius)) {
-
-		//if it is on surface it can be a start from the planet and 
-		//trying to escape the orbit, so i return it as not a full collistion, 
-		//but if distance decreases (ship goes into the planet) collisition will trigger.
-		std::cout << "\nShip: " << Particle.name << ", is located on Planet: " << " Surface" << Planet.name << "!" << std::endl;
-		return false; 
-	}
-
-	// distance btw center and point is greater than radius
-	else return false;
 }
 
 void Solver::Populate() {
 
 	double i=0;
-	int Planet_Num;
+	short int Planet_Num=0;
 	Planet planet(0, 0, 0, 0, 0, "");
 
 	//Get ammount of planets in sim
@@ -158,7 +59,11 @@ void Solver::Populate() {
 }
 
 void Solver::Setup() {
-	Populate();
+
+	Particle.User_set(); //setup particle
+	Populate(); //setup planets
+	short int interval_num=0;
+	EngineTimes interval;
 
 	while (std::cout << "Input a time of motion: " && !(std::cin >> T) || (T < 0)) {
 		std::cin.clear();
@@ -170,15 +75,247 @@ void Solver::Setup() {
 		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		std::cout << "Invalid input; please re-enter.\n";
 	}
-	while (std::cout << "Input time of turning on the engines (x y z): " && !(std::cin >> tx >> ty >> tz) || (tx < 0 || ty < 0 || tz < 0) || (tx > T || ty > T || tz > T)) {
+
+	std::cout << "\nEngine Control Section: " << std::endl;
+
+	while (std::cout << "How many time intervals will be used for engine control?" && !(std::cin >> interval_num) || (interval_num < 0)){
 		std::cin.clear();
 		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		std::cout << "Invalid input; please re-enter.\n";
 	}
 
+	//fill all intervals until input is correct
+	for (int i = 0; i < interval_num && interval.Check_input(); i++) {
+
+		std::cout << "Interval  " << i << ": Enter time of turning on the engines (x y z): " << std::endl;
+		std::cin >> interval.timestart.x >> interval.timestart.y >> interval.timestart.z;
+
+		std::cout << "Interval  " << i << ": Enter time of turning off the engines (x y z): " << std::endl;
+		std::cin >> interval.timeend.x >> interval.timeend.y >> interval.timeend.z;
+
+		std::cout << "Interval  " << i << ": Enter engine force at this interval (x y z): " << std::endl;
+		std::cin >> interval.engforce.x >> interval.engforce.y >> interval.engforce.z;
+
+		if (interval.Check_input()) {
+				TimeVect.push_back(interval);
+				interval.Print_Interval();
+		}
+		else {
+			TimeVect.push_back(interval);  //TODO: fix this check input, because for now it does not work
+			interval.Print_Interval();
+		}
+	}
+
 	//write initial values to vectors
-	Push_Back(0);
+	Write_initial();
 }
+
+void Solver::Save_json() {
+
+	using json = nlohmann::json;
+
+	// create an empty structure
+	json data;
+	data["ship"]["name"] = Particle.name;
+	data["ship"]["position"][0] = Particle.position.x;
+	data["ship"]["position"][1] = Particle.position.y;
+	data["ship"]["position"][2] = Particle.position.z;
+	data["ship"]["velocity"][0] = Particle.velocity.x;
+	data["ship"]["velocity"][1] = Particle.velocity.y;
+	data["ship"]["velocity"][2] = Particle.velocity.z;
+	data["ship"]["mass"] = Particle.mass;
+	data["ship"]["fuel"] = Particle.fuel;
+	data["ship"]["fuel_usage"] = Particle.fuel_usage;
+
+	for (auto& p : Planets) {
+		auto i = &p - &Planets[0];
+		data["planets"][i]["name"] = p.name;
+		data["planets"][i]["mass"] = p.mass;
+		data["planets"][i]["radius"] = p.radius;
+		data["planets"][i]["position"][0] = p.position.x;
+		data["planets"][i]["position"][1] = p.position.y;
+		data["planets"][i]["position"][2] = p.position.z;
+	}
+	for (auto& t : TimeVect) {
+		auto i = &t - &TimeVect[0];
+		data["control"][i]["starttime"][0] = t.timestart.x;
+		data["control"][i]["starttime"][1] = t.timestart.y;
+		data["control"][i]["starttime"][2] = t.timestart.z;
+		data["control"][i]["endtime"][0] = t.timeend.x;
+		data["control"][i]["endtime"][1] = t.timeend.y;
+		data["control"][i]["endtime"][2] = t.timeend.z;
+		data["control"][i]["force"][0] = t.engforce.x;
+		data["control"][i]["force"][1] = t.engforce.y;
+		data["control"][i]["force"][2] = t.engforce.z;
+	}
+
+	data["data"]["time"] = T;
+	data["data"]["step"] = t;
+
+	std::string path = "./JSON_files/" + Particle.name + ".json";
+	std::ofstream file(path.c_str());
+	file << std::setw(4) << data << std::endl;
+	std::cout << "File saved Successfully as: " << path << std::endl;
+}
+
+std::ifstream Solver::Load_file(std::string sys_path, std::string filepath, std::string extenstion) {
+
+	std::ifstream file;
+	std::string file_name;
+
+	std::cout << "Data available: " << std::endl;
+	const std::filesystem::path path{ sys_path.c_str() };
+
+	for (auto const& dir_entry : std::filesystem::directory_iterator{ path }) {
+		if (dir_entry.is_regular_file() && dir_entry.path().string().ends_with(extenstion.c_str())) {
+			std::cout << dir_entry.path().filename().replace_extension() << '\n';
+		}
+	}
+
+	while (1) {
+		std::cout << "Enter Name of your file: " << std::endl;
+		std::cin >> file_name;
+		std::cout << "\n";
+		std::string filename = filepath;;
+		filename.append(file_name + extenstion.c_str());
+		file.open(filename.c_str());
+		if (!file) {
+			std::cin.clear();
+			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+			filename.clear();
+			std::cout << "\nFile not found\n" << std::endl;
+		}
+		else {
+			break;
+		}
+	}
+	return file;
+}
+
+void Solver::Load_data(std::string& filename) {
+
+	std::ifstream file;
+
+	if (filename != "") {
+		file.open(filename);
+	}
+
+	else {
+		file = Load_file(".\\JSON_files\\", "./JSON_files/", ".json");
+	}
+
+	using json = nlohmann::json;
+	json data = json::parse(file);
+
+	Particle.name = data["ship"]["name"];
+	Particle.position = { data["ship"]["position"][0], data["ship"]["position"][1], data["ship"]["position"][2] };
+	Particle.velocity = { data["ship"]["velocity"][0], data["ship"]["velocity"][1], data["ship"]["velocity"][2] };
+	Particle.mass = data["ship"]["mass"];
+	Particle.fuel = data["ship"]["fuel"];
+	Particle.fuel_usage = data["ship"]["fuel_usage"];
+
+	std::cout << "\nShip loaded: " << std::endl;
+	Particle.Print_info();
+
+
+	for (auto& p : data["planets"]) {
+
+		Planet planet;
+		planet.name = p["name"];
+		planet.mass = p["mass"];
+		planet.radius = p["radius"];
+		planet.position = { p["position"][0], p["position"][1], p["position"][2] };
+		Planets.push_back(planet);
+		std::cout << "\nPlanet Added: \n";
+		planet.Print_info();
+	}
+
+	for (auto& c : data["control"]) {
+
+		EngineTimes interval;
+		//engine interval start
+		interval.timestart = { c["starttime"][0], c["starttime"][1], c["starttime"][2] };
+		//engine interval end
+		interval.timeend = { c["endtime"][0], c["endtime"][1], c["endtime"][2] };
+		//engine interval force 
+		interval.engforce = { c["force"][0],c["force"][1], c["force"][2] };
+		//save time interval to vector
+		TimeVect.push_back(interval);
+		//print time interval
+		std::cout << "\nTime interval Added: \n";
+		interval.Print_Interval();
+	}
+
+	Write_initial();
+
+	T = data["data"]["time"];
+	t = data["data"]["step"];
+
+	file.close();
+}
+
+bool Solver::Check_Collision(Planet& Planet) {
+
+	Vector3D Distances = { pow((Particle.position.x - Planet.position.x), 2),
+		pow((Particle.position.y - Planet.position.y), 2),
+		pow((Particle.position.z - Planet.position.z), 2) };
+
+	// distance between the centre and given point
+	double distance = Distances.x + Distances.y + Distances.z;
+
+	if (distance < (Planet.radius * Planet.radius)) {
+		std::cout << "\nShip: " << Particle.name << ", has crashed into Planet: " << Planet.name
+			<< " !\n********************************************************" << std::endl;
+		return true;
+	}
+
+	// distance btw centre and point is equal to radius
+	else if (distance == (Planet.radius * Planet.radius)) {
+
+		//if it is on surface it can be a start from the planet and a try to escape the orbit, so i return it as not a full collistion, 
+		std::cout << "\nShip: " << Particle.name << ", is located on Planet: " << " Surface" << Planet.name << "!" << std::endl;
+		return false;
+	}
+
+	// distance btw center and point is greater than radius
+	else return false;
+}
+
+bool Solver::UseEngine(double& time) {
+
+	bool used = false;
+	//TODO: Check fuel
+
+	for (auto& i : TimeVect) {
+
+		used = false;
+		//check if simulation step is contained in one of the intervals
+		//x
+		if (time >= i.timestart.x && time <= i.timeend.x) {
+			Particle.engine.x = i.engforce.x; //if yes turn on the engine
+			used = true;
+		}
+
+		//y
+		if (time >= i.timestart.y && time <= i.timeend.y) {
+			Particle.engine.y = i.engforce.y;
+			used = true;
+		}
+
+		//z
+		if (time >= i.timestart.z && time <= i.timeend.z) {
+			Particle.engine.z = i.engforce.z;
+			used = true;
+		}
+
+		//because current time can only be in one interval we do not need to check all of them
+		if (used) {
+			return true;
+		}
+	}
+	return false;
+}
+
 
 void Solver::Euler() {
 
@@ -202,19 +339,15 @@ void Solver::Euler() {
 				}
 
 				//distance between ship and planets
-				distance.x = abs(Particle.position.x - p.position.x);
-				distance.y = abs(Particle.position.y - p.position.y);
-				distance.z = abs(Particle.position.z - p.position.z);
+				distance = { abs(Particle.position.x - p.position.x), abs(Particle.position.y - p.position.y), abs(Particle.position.z - p.position.z) };
 
 				//Potential energy
-				Particle.PotentialEnergy.x -= (G * p.mass * Particle.mass) / (distance.x);
-				Particle.PotentialEnergy.y -= (G * p.mass * Particle.mass) / (distance.y);
-				Particle.PotentialEnergy.z -= (G * p.mass * Particle.mass) / (distance.z);
+				Particle.PotentialEnergy -= {(G* p.mass* Particle.mass) / (distance.x), (G* p.mass* Particle.mass) / (distance.y), (G* p.mass* Particle.mass) / (distance.z)};
 
 				//gravitational forces
-				grav_forces.x += ((G * p.mass * Particle.mass) / (distance.x * distance.x));
-				grav_forces.y += ((G * p.mass * Particle.mass) / (distance.y * distance.y));
-				grav_forces.z += ((G * p.mass * Particle.mass) / (distance.z * distance.z));
+				grav_forces += {((G * p.mass * Particle.mass) / (distance.x * distance.x)), ((G * p.mass * Particle.mass) / (distance.y * distance.y)), ((G * p.mass * Particle.mass) / (distance.z * distance.z))
+			};
+				
 			}
 
 			//Change initial value of energy and start printing energy
@@ -226,47 +359,27 @@ void Solver::Euler() {
 			}
 
 		}	
-			//check engine forces only if particle has a mass
-			if (Particle.mass > 0 ) {
+			//check forces only if particle has a mass 
+		if (Particle.mass > 0) {
 
-				//will engine be used in this iteration 
-				//TODO: not sure if fuel should decrease sepreatly for each plane, or if it is connected so temporaily it will be connected:
-				engine_used = false;
-
-				//x
-				if (time >= tx && Particle.fuel > 0 && Particle.engine.x != 0) {
-					Particle.force.x = Particle.engine.x + grav_forces.x;
-					Particle.velocity.x += (Particle.force.x / Particle.mass) * t;
-					engine_used = true;
-				}
-
-				//y 
-				if (time >= ty && Particle.fuel > 0 && Particle.engine.y != 0) {
-					Particle.force.y = Particle.engine.y + grav_forces.y;
-					Particle.velocity.y += (Particle.force.y / Particle.mass) * t;
-					engine_used = true;
-				}
-
-				//z
-				if (time >= tz && Particle.fuel > 0 && Particle.engine.z != 0) {
-					Particle.force.z = Particle.engine.z + grav_forces.z;
-					Particle.velocity.z += (Particle.force.z / Particle.mass) * t;
-					engine_used = true;
-				}
-
-				//remove fuel used 
-				if (engine_used) {
-					Particle.fuel -= fuel_used;
-					Particle.mass -= fuel_used;
-				}
-
-				//if engines not used change velocity because of gravitational forces
-				else {
-					Particle.force = grav_forces;
-					Particle.velocity.x += (Particle.force.x / Particle.mass) * t;
-					Particle.velocity.y += (Particle.force.y / Particle.mass) * t;
-					Particle.velocity.z += (Particle.force.z / Particle.mass) * t;
-				}
+			//will engine be used in this iteration 
+			engine_used = false;
+			//engine is used only if time intervals vector is not empty
+			if (!TimeVect.empty()) {
+				engine_used = UseEngine(time);
+			}
+			//remove fuel used 
+			if (engine_used) {
+				Particle.fuel -= fuel_used;
+				Particle.mass -= fuel_used;
+			}
+			//if engine not used
+			else {
+				Particle.engine.Zero();
+			}
+			//calculate velocites
+			Particle.force = { Particle.engine.x + grav_forces.x , grav_forces.y + Particle.engine.y, grav_forces.z + Particle.engine.z };
+			Particle.velocity += {(Particle.force.x / Particle.mass) * t, (Particle.force.y / Particle.mass) * t, (Particle.force.z / Particle.mass) * t };
 			}
 
 		//position
@@ -277,7 +390,7 @@ void Solver::Euler() {
 
 		//kinetic energy 
 		Particle.KineticEnergy = { Particle.velocity.x * Particle.mass / 2, Particle.velocity.y * Particle.mass / 2 , Particle.velocity.z * Particle.mass / 2 };
-
+		
 		//save values to vectors
 		Push_Back(time);
 	}
@@ -285,108 +398,6 @@ void Solver::Euler() {
 	//display information at the end of motion:
 	std::cout << "\nTime of motion: " << T << " seconds" << std::endl;
 	Particle.Print_info();
-}
-
-void Solver::Save_data() {
-
-	std::string particle_name = Particle.name;
-	std::string filename = "./Simulation_History/Ships/";
-	particle_name.append(".txt");
-	filename.append(particle_name);
-	std::ofstream file;
-	file.open(filename.c_str());
-
-	for (auto t = 0; t < time_data.size(); t++) {
-
-		file << time_data[t] << " " << mass_data[t] << " " << fuel_data[t] << " " << Particle.fuel_usage
-			<< " " << position_data[t].x << " " << position_data[t].y << " " << position_data[t].z
-			<< " " << velocity_data[t].x << " " << velocity_data[t].y << " " << velocity_data[t].z
-			<< " " << engine_data[t].x << " " << engine_data[t].y << " " << engine_data[t].z
-			<< " " << force_data[t].x << " " << force_data[t].y << " " << force_data[t].z 
-			<< " " << kinetic_data[t].x << " " << kinetic_data[t].y << " " << kinetic_data[t].z
-			<< " " << potential_data[t].x << " " << potential_data[t].y << " " << potential_data[t].z
-			<< std::endl;
-	}
-	file.close();
-}
-
-void Solver::Load_data() {
-	
-	std::string particle_name;
-	std::ifstream file;
-
-	std::cout << "Simulation data available: " << std::endl;
-	const std::filesystem::path path{ ".\\Simulation_History\\Ships" };
-
-	//looking for all the files with .txt extenstion in the path:
-	for (auto const& dir_entry : std::filesystem::directory_iterator{ path }) {
-		if (dir_entry.is_regular_file() && dir_entry.path().string().ends_with(".txt")) {
-			std::cout << dir_entry.path().filename().replace_extension() << '\n'; //replace_extenstion removes the .txt from the output
-		}
-	}
-
-	//opens file from the inputed name:
-	while (1) {
-		std::cout << "Enter simulation name: " << std::endl;
-		std::cin >> particle_name;
-		std::cout << "\n";
-		std::string filename = "./Simulation_History/Ships/";;
-		filename.append(particle_name + ".txt");
-		//check if file exists:
-		file.open(filename.c_str());
-		if (!file) {
-			std::cin.clear();
-			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-			filename.clear();
-			std::cout << "\nFile not found\n" << std::endl;
-		}
-		else {
-			break;
-		}
-	}
-
-	
-	//temporary storage for reading from file
-	double time_temp, mass_temp, fuel_temp, fuel_use;
-	Vector3D position_temp, velocity_temp, engine_temp, force_temp, kin_temp, pot_temp;
-
-	while (file >> time_temp >> mass_temp >> fuel_temp >> fuel_use
-			>> position_temp.x >> position_temp.y >> position_temp.z
-			>> velocity_temp.x >> velocity_temp.y >> velocity_temp.z
-			>> engine_temp.x >> engine_temp.y >> engine_temp.z
-			>> force_temp.x >> force_temp.y >> force_temp.z
-			>> kin_temp.x >> kin_temp.y >> kin_temp.z
-			>> pot_temp.x >> pot_temp.y >> pot_temp.z){
-
-		//load all data from the file to corresponding vectors
-		Push_Back(time_temp, mass_temp, fuel_temp, position_temp, velocity_temp, engine_temp, force_temp, kin_temp, pot_temp);
-	}
-
-		//set particle to initial value if user wants to run the same simulation again
-		Particle.fuel_usage = fuel_use;
-		Particle.name = particle_name;
-		Particle.mass = mass_data[0];
-		Particle.fuel = fuel_data[0];
-
-		Particle.position.x = position_data[0].x;
-		Particle.position.y = position_data[0].y;
-		Particle.position.z = position_data[0].z;
-
-		Particle.velocity.x = velocity_data[0].x;
-		Particle.velocity.y = velocity_data[0].y;
-		Particle.velocity.z = velocity_data[0].z;
-
-		Particle.engine.x = force_data[0].x;
-		Particle.engine.y = force_data[0].y;
-		Particle.engine.z = force_data[0].z;
-
-		Particle.force.x = force_data[0].x;
-		Particle.force.y = force_data[0].y;
-		Particle.force.z = force_data[0].z;
-
-		//set displacement to 0
-		Particle.displacement.Zero();
-		Particle.Print_info();
 }
 
 void Solver::Push_Back(double time) {
@@ -402,65 +413,39 @@ void Solver::Push_Back(double time) {
 	potential_data.push_back(Particle.PotentialEnergy);
 }
 
-void Solver::Push_Back(double time, double mass, double fuel, Vector3D position, Vector3D velocity, Vector3D engine, Vector3D force, Vector3D kinetic_energy, Vector3D potential_energy){
+void Solver::Save_data() {
 
-	time_data.push_back(time);
-	mass_data.push_back(mass);
-	fuel_data.push_back(fuel);
-	position_data.push_back(position);
-	velocity_data.push_back(velocity);
-	engine_data.push_back(engine);
-	force_data.push_back(force);
-	kinetic_data.push_back(kinetic_energy);
-	potential_data.push_back(potential_energy);
-}
+	std::string particle_name = Particle.name;
+	std::string filename = "./Simulation_History/Ships/";
+	particle_name.append(".txt");
+	filename.append(particle_name);
+	std::ofstream file;
+	file.open(filename.c_str());
+	file.precision(10);
+	
+	//write informational line
+	file << "Time[s] " << "Mass[kg] " << "Fuel[kg]" << " FuelUsage[kg/s]" 
+		<< " Posx(t)[m]" << " Posy(t)[m]" << " Posz(t)[m]" 
+		<< " Velx(t)[m/s]" << " Vely(t)[m/s]" << " Velz(t)[m/s]"
+		<< " EngineFx[N]" << " EngineFy[N]" << " EngineFz[N]"
+		<< " NetFx[N]" << " NetFy[N]" << " NetFz[N]"
+		<< " EKinx[J]" << " EKiny[J]" << " EKinz[J]"
+		<< " EPotx[J]" << " EPoty[J]" << " EPotz[J]" << std::endl;
 
-void Solver::Change_data(){
+	for (auto t = 0; t < time_data.size(); t++) {
 
-	char choice = 'n';
-	std::cout << "Data changing of the particle ";
-	std::cout << "Do you wish to change name? [y/n]";
-	std::cin >> choice;
-		if (choice == 'y') {
-			std::cout << "Input name of the particle: ";
-			std::cin >> Particle.name;
-		}
-	std::cout << "Do you wish to change mass? [y/n]";
-	std::cin >> choice;
-		if (choice == 'y') {
-			std::cout << "Input mass in kg: ";
-			std::cin >> Particle.mass;
-			std::cout << "Input fuel mass: ";
-			std::cin >> Particle.fuel;
-			Particle.mass += Particle.fuel;
-		}
-	std::cout << "Do you wish to change position? [y/n]";
-	std::cin >> choice;
-		if (choice == 'y') {
-			std::cout << "Input position x,y,z: ";
-			std::cin >> Particle.position.x >> Particle.position.y >> Particle.position.z;
-		}
-	std::cout << "Do you wish to change velocity? [y/n]";
-	std::cin >> choice;
-		if (choice == 'y') {
-			std::cout << "Input velocity x,y,z in m/s with - to change direction: ";
-			std::cin >> Particle.velocity.x >> Particle.velocity.y >> Particle.velocity.z;
-		}
-	std::cout << "Do you wish to change force? [y/n]";
-	std::cin >> choice;
-		if (choice == 'y') {
-			std::cout << "Input force x,y,z in N with - to change direction: [y/n]";
-			std::cin >> Particle.force.x >> Particle.force.y >> Particle.force.z;
-		}
-	std::cout << "Do you wish to change fuel usage? [y/n]";
-	std::cin >> choice;
-		if (choice == 'y') {
-			std::cout << "Input fuel usage in kg/s: ";
-			std::cin >> Particle.fuel_usage;
-		}
+		file << time_data[t] << " " << mass_data[t] << " " << fuel_data[t] << " " << Particle.fuel_usage
+			<< " " << position_data[t].x << " " << position_data[t].y << " " << position_data[t].z
+			<< " " << velocity_data[t].x << " " << velocity_data[t].y << " " << velocity_data[t].z
+			<< " " << engine_data[t].x << " " << engine_data[t].y << " " << engine_data[t].z
+			<< " " << force_data[t].x << " " << force_data[t].y << " " << force_data[t].z 
+			<< " " << kinetic_data[t].x << " " << kinetic_data[t].y << " " << kinetic_data[t].z
+			<< " " << potential_data[t].x << " " << potential_data[t].y << " " << potential_data[t].z
+			<< std::endl;
+	}
+	file.close();
 
-		//Data changed so recalculate Potential Energy
-		Particle.CalculatedEnergy = false;
+	Save_planets();
 }
 
 void Solver::Save_planets() {
@@ -471,6 +456,12 @@ void Solver::Save_planets() {
 	filename.append(particle_name);
 	std::ofstream file;
 	file.open(filename.c_str());
+	file.precision(10);
+
+	//write informational line
+	file << "Name " << "Mass[kg] " << "Radius[m]"
+		<< " Posx(t)[m]" << " Posy(t)[m]" << " Posz(t)[m]" << std::endl;
+
 
 	for (auto& p : Planets) {
 
@@ -481,93 +472,3 @@ void Solver::Save_planets() {
 	file.close();
 }
 
-void Solver::Load_planets() {
-
-	std::string particle_name = Particle.name;
-	std::string filename = "./Simulation_History/Planets/";
-	particle_name.append("_planets.txt");
-	filename.append(particle_name);
-	std::ifstream file;
-	Planet planet(0, 0, 0, 0, 0, "");
-
-	//open file
-	file.open(filename.c_str());
-
-	if (!is_empty(file)) {
-
-		//temporary storage for reading from file
-		std::string name_temp;
-		double mass_temp, radius_temp;
-		Vector3D position_temp;
-
-		while (file >> name_temp >> mass_temp >> radius_temp >> 
-		position_temp.x >> position_temp.y >> position_temp.z){
-
-			//assign planet's data
-			planet.name = name_temp;
-			planet.mass = mass_temp;
-			planet.radius = radius_temp;
-			planet.position = position_temp;
-
-			//load planets to solver vector Planets
-			Planets.push_back(planet);
-			std::cout << "\nPlanet Loaded: \n";
-			planet.Print_info();
-		}
-	}
-	file.close();
-}
-
-void Solver::Change_planets() {
-
-	enum choice { Add, Edit, Remove };
-	int option = -1;
-	int i = 0;
-	//first ask if he wants to change or remove any of existing planets
-	for (auto& p : Planets) {
-		std::cout << "\nCurrent Planet: " << std::endl;
-		p.Print_info();
-
-		while (std::cout << "\nPlease choose if you want to: \n 0.Add new planet \n 1.Change current planet \n 2.Remove current planet " && !(std::cin >> option) || (option < 0 || option > 2)) {
-			std::cin.clear();
-			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-			std::cout << "Invalid Selection\n";
-		}
-
-		switch (option) {
-		case Add:{
-			Planet planet(true);
-			Planets.push_back(planet);
-			std::cout << "\nPlanet Added: \n";
-			planet.Print_info();
-			break;
-		}
-		case Edit: {
-			p.Change_info();
-			break; }
-
-		case Remove: {   
-			Planets.erase(Planets.begin() + i);
-			if (Planets.size() == 1) {
-				Planets.clear();
-			}
-
-			break; }
-
-		default: {
-			std::cout << "Invalid Selection\n";
-			break;
-		}
-		}
-		if (Planets.empty()) break;
-		std::cout << "\nCurrent Planet after changes: " << std::endl;
-		p.Print_info();
-		i++;
-	} 
-
-}
-
-bool Solver::is_empty(std::ifstream& pFile)
-{
-	return pFile.peek() == std::ifstream::traits_type::eof();
-}
