@@ -11,9 +11,15 @@ public:
 		solver.step = 1;
 	}
 
+	void SetUp(int ode) {
+		solver.T = 10;
+		solver.step = 1;
+		solver.method = ode;
+	}
+
 	void SetUp(double step, double time) {
-		 solver.T = time;
-		 solver.step = step;
+		solver.T = time;
+		solver.step = step;
 	} 
 
 	bool CheckShip(double rx, double ry, double rz, double vx, double vy, double vz, double ex, double ey, double ez, double fx, double fy, double fz, double m) {
@@ -23,6 +29,8 @@ public:
 		
 		//position
 		if (!solver.Particle.position.VectorsEqual({ rx, ry, rz })) return false;
+
+		//add displacement check
 
 		//velocities
 		if (!solver.Particle.velocity.VectorsEqual({ vx, vy, vz })) return false;
@@ -65,25 +73,65 @@ public:
 };
 
 
+//Adam's B tests
+
+TEST_F(SolverTest, Adams_BashfordFunctionMassOnly) {
+	SetUp(0);
+	Set_Stats(0, 0, 0, 0, 0, 0, 1000, 0, 0);
+	solver.Solve();
+	ASSERT_TRUE(CheckShip(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000));
+}
+
+TEST_F(SolverTest, Adams_BashfordFunctionNoEngineNoPlanets) {
+	SetUp(0);
+	Set_Stats(0, 0, 0, 10, 10, 10, 1000, 0, 0);
+	solver.Solve();
+	ASSERT_TRUE(CheckShip(100, 100, 100, 10, 10, 10, 0, 0, 0, 0, 0, 0, 1000));
+}
+
 //Euler tests
 TEST_F(SolverTest, EulerFunctionMassOnly) {
-	SetUp();
+	SetUp(1);
 	Set_Stats(0, 0, 0, 0, 0, 0, 1000, 0, 0);
-	solver.Euler();
+	solver.Solve();
 	ASSERT_TRUE(CheckShip(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000));
 }
 
 TEST_F(SolverTest, EulerFunctionNoEngineNoPlanets) {
-	SetUp();
+	SetUp(1);
 	Set_Stats(0, 0, 0, 10, 10, 10, 1000, 0, 0);
-	solver.Euler();
+	solver.Solve();
 	ASSERT_TRUE(CheckShip(100, 100, 100, 10, 10, 10, 0, 0, 0, 0, 0, 0, 1000));
 }
 
-TEST_F(SolverTest, EulerFunctionWithEngineNoFuelNoPlanets) {
-	SetUp();
+//Midpoint tests
+
+TEST_F(SolverTest, MidpointFunctionMassOnly) {
+	SetUp(2);
 	Set_Stats(0, 0, 0, 0, 0, 0, 1000, 0, 0);
-	Engine_Set({10,10,10}, {10,10,10}, {2000, 2000, 2000});
-	solver.Euler();
-	ASSERT_TRUE(CheckShip(2, 2, 2, 2, 2, 2, 2000, 2000, 2000, 2000, 2000, 2000, 1000));
+	solver.Solve();
+	ASSERT_TRUE(CheckShip(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000));
+}
+
+TEST_F(SolverTest, MidpointFunctionNoEngineNoPlanets) {
+	SetUp(2);
+	Set_Stats(0, 0, 0, 10, 10, 10, 1000, 0, 0);
+	solver.Solve();
+	ASSERT_TRUE(CheckShip(100, 100, 100, 10, 10, 10, 0, 0, 0, 0, 0, 0, 1000));
+}
+
+//Runge-Kutta tests
+
+TEST_F(SolverTest, RungeKuttaFunctionMassOnly) {
+	SetUp(3);
+	Set_Stats(0, 0, 0, 0, 0, 0, 1000, 0, 0);
+	solver.Solve();
+	ASSERT_TRUE(CheckShip(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000));
+}
+
+TEST_F(SolverTest, RungeKuttaFunctionNoEngineNoPlanets) {
+	SetUp(3);
+	Set_Stats(0, 0, 0, 10, 10, 10, 1000, 0, 0);
+	solver.Solve();
+	ASSERT_TRUE(CheckShip(100, 100, 100, 10, 10, 10, 0, 0, 0, 0, 0, 0, 1000));
 }

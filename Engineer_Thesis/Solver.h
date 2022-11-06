@@ -1,7 +1,9 @@
 #pragma once
+#include <fstream>
+#include <iomanip>
 #include "Vehicle.h"
 #include "Planet.h"
-#include <fstream>
+
 
 //forward declare class
 class Control;
@@ -15,12 +17,17 @@ public:
 	std::vector <Planet> Planets;
 	std::vector <Control> TimeVect;
 	Point_Particle Particle = Point_Particle("", 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	Vector3D grav_forces, distance;
+	bool engine_used = false;
+	enum ode { adams, euler, midpoint, runge};
+	int method=0; //which method will be used
 
 	//T is time of simulation, step is time step and time is current simulation time
-	double T = 0, step = 0, time = 0;
+	double T = 0, step = 0, time = 0, fuel_used = 0;
 
-	//save intial values to corresponding vectors
-	void Write_initial();
+	//derivatives of position and velocity
+	double dvdt(double t, double v, double f, double m) { return f / m; }
+	double dxdt(double t, double v, double x) { return v; }
 	//define planets in simulation
 	void Populate();
 	//Create all simulation elements
@@ -35,18 +42,31 @@ public:
 	bool Check_Collision(Planet& Planet);
 	//function to check intervals and apply engine force
 	bool UseEngine(double& time);
-	//Solver using Euler method
-	void Euler();
+	//Calculate Gravitation forces from planets and Potential Energy of particle
+	void Calculate_Grav();
+	//Calculate Net force
+	void Calculate_Net();
+	//Solver use Euler method
+	void Euler(double& time, double& velocity, double& position, double& dt, double& force, double& mass);
+	//Solver use Runge-Kutta IV-order method
+	void Runge_Kutta(double& time, double& velocity, double& position, double& dt, double& force, double& mass);
+	//Solver use Midpoint method
+	void Midpoint(double& time, double& velocity, double& position, double& dt, double& force, double& mass);
+	//Solver use Adam's Bashforth
+	void Adams_Bashford(double& time, double& velocity, double& position, double& dt, double& force, double& mass);
+	//main solving function
+	void Solve();
 	//save values to vectors
 	void Push_Back();
 	//Save simulation data to file
 	void Save_data();
-	//Save planet configuration to a file
-	void Save_planets();
 	//check if file is empty 
 	bool is_empty(std::ifstream& pFile)
 	{
 		return pFile.peek() == std::ifstream::traits_type::eof();
+	}
+	void Print_Pauses() {
+		std::cout  << std::setfill('=') << std::setw(120) << "\n";
 	}
 };
 
@@ -63,22 +83,22 @@ public:
 			<< "\nEnd times(x,y,z): " << timeend << " s"
 			<< "\nEngine force(x,y,z): " << engforce << " N" << std::endl;
 	}
-	bool Check_input(Solver& solver) {
+	bool Check_input(Solver& method) {
 		//check input:
 			//initial check:
-		if (solver.TimeVect.empty()) {
+		if (method.TimeVect.empty()) {
 			//timestart 
 			if (timestart.x < 0 || timestart.y < 0 || timestart.z < 0) return false;
 			//timeend
-			if (timeend.x > solver.T || timeend.y > solver.T || timeend.z > solver.T) return false;
+			if (timeend.x > method.T || timeend.y > method.T || timeend.z > method.T) return false;
 			if (timeend.x < timestart.x || timeend.y < timestart.y || timeend.z < timestart.z) return false;
 		}
 		else {
 			if (timestart.x < 0 || timestart.y < 0 || timestart.z < 0) return false;
-			if (timeend.x > solver.T || timeend.y > solver.T || timeend.z > solver.T) return false;
+			if (timeend.x > method.T || timeend.y > method.T || timeend.z > method.T) return false;
 			if (timeend.x < timestart.x || timeend.y < timestart.y || timeend.z < timestart.z) return false;
 			//check if interval does not intersect previous interval
-			if (timestart.x < solver.TimeVect.back().timeend.x || timestart.y < solver.TimeVect.back().timeend.y || timestart.z < solver.TimeVect.back().timeend.z) return false;
+			if (timestart.x < method.TimeVect.back().timeend.x || timestart.y < method.TimeVect.back().timeend.y || timestart.z < method.TimeVect.back().timeend.z) return false;
 		}
 		//if all conditions are satisfied return true
 		return true;

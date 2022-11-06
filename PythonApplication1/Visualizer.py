@@ -1,6 +1,13 @@
 import matplotlib.pyplot as plt
 import glob 
 import os
+from enum import Enum
+
+class Method(Enum):
+    Adams_Bashford = 0
+    Euler = 1
+    Midpoint = 2
+    Runge_Kutta_IV = 3
 
 print('Data files available for Visualization:')
 path = r'../Engineer_Thesis/Simulation_History/Ships/*.txt'
@@ -38,6 +45,11 @@ with open('../Engineer_Thesis/Simulation_History/Ships/%s.txt' % name) as f:
     potx = [float(line.split()[19]) for line in lines]
     poty = [float(line.split()[20]) for line in lines]
     potz = [float(line.split()[21]) for line in lines]
+    meth = [int(line.split()[22]) for line in lines]
+
+
+#append method to the name
+name += "_" + Method(meth[0]).name
 
 #Mass and fuel
 plt.subplot(2, 4, 1)

@@ -1,3 +1,0 @@
-Name Mass[kg] Radius[m] Posx(t)[m] Posy(t)[m] Posz(t)[m]
-Eirk 300000 5000 10000 10000 -20000 
-Sudo 200000 6000 -30000 30000 20000 

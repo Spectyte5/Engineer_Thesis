@@ -2,22 +2,6 @@
 #include <filesystem>
 #include "../nlohmann/json.hpp"
 
-void Solver::Write_initial() {
-
-	if (!TimeVect.empty()) {
-		if (TimeVect.front().timestart.x == 0) {
-			Particle.engine.x = TimeVect.front().engforce.x;
-		}
-		if (TimeVect.front().timestart.y == 0) {
-			Particle.engine.y = TimeVect.front().engforce.y;
-		}
-		if (TimeVect.front().timestart.z == 0) {
-			Particle.engine.z = TimeVect.front().engforce.z;
-		}
-	}
-	Push_Back();
-}
-
 void Solver::Populate() {
 
 	double i=0;
@@ -61,7 +45,9 @@ void Solver::Populate() {
 void Solver::Setup() {
 
 	Particle.User_set(); //setup particle
+	Print_Pauses();
 	Populate(); //setup planets
+	Print_Pauses();
 	short int interval_num=0;
 	Control interval;
 
@@ -74,6 +60,12 @@ void Solver::Setup() {
 		std::cin.clear();
 		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		std::cout << "Invalid input; please re-enter.\n";
+	}
+
+	while (std::cout << "Which Method should be used for solving ODE: \n 0.Adam's Bashforth \n 1.Euler \n 2.Midpoint \n 3.Runge Kutta IV: " && !(std::cin >> method) || (method < 0 || method > 3)) {
+		std::cin.clear();
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		std::cout << "Invalid Selection\n";
 	}
 
 	std::cout << "\nEngine Control Section: " << std::endl;
@@ -102,9 +94,6 @@ void Solver::Setup() {
 		}
 		else { i--; }
 	}
-
-	//write initial values to vectors
-	Write_initial();
 }
 
 void Solver::Save_json() {
@@ -148,6 +137,7 @@ void Solver::Save_json() {
 
 	data["data"]["time"] = T;
 	data["data"]["step"] = step;
+	data["data"]["ode"] = method;
 
 	std::string path = "./JSON_files/" + Particle.name + ".json";
 	std::ofstream file(path.c_str());
@@ -160,6 +150,7 @@ std::ifstream Solver::Load_file(std::string sys_path, std::string filepath, std:
 	std::ifstream file;
 	std::string file_name;
 
+	Print_Pauses();
 	std::cout << "Data available: " << std::endl;
 	const std::filesystem::path path{ sys_path.c_str() };
 
@@ -172,7 +163,6 @@ std::ifstream Solver::Load_file(std::string sys_path, std::string filepath, std:
 	while (1) {
 		std::cout << "Enter Name of your file: " << std::endl;
 		std::cin >> file_name;
-		std::cout << "\n";
 		std::string filename = filepath;;
 		filename.append(file_name + extenstion.c_str());
 		file.open(filename.c_str());
@@ -186,6 +176,7 @@ std::ifstream Solver::Load_file(std::string sys_path, std::string filepath, std:
 			break;
 		}
 	}
+	Print_Pauses();
 	return file;
 }
 
@@ -210,11 +201,12 @@ void Solver::Load_data(std::string& filename) {
 	Particle.mass = data["ship"]["mass"];
 	Particle.fuel = data["ship"]["fuel"];
 	Particle.fuel_usage = data["ship"]["fuel_usage"];
-
-	std::cout << "\nShip loaded: " << std::endl;
+	
+	std::cout << "Ship:\n\n" << "Ship loaded: " << std::endl;
 	Particle.Print_info();
+	Print_Pauses();
 
-
+	std::cout << "Planets: \n";
 	for (auto& p : data["planets"]) {
 
 		Planet planet;
@@ -223,10 +215,11 @@ void Solver::Load_data(std::string& filename) {
 		planet.radius = p["radius"];
 		planet.position = { p["position"][0], p["position"][1], p["position"][2] };
 		Planets.push_back(planet);
-		std::cout << "\nPlanet Added: \n";
+		std::cout << "\nPlanet Added:";
 		planet.Print_info();
 	}
-
+	Print_Pauses();
+	std::cout << "Intervals: \n";
 	for (auto& c : data["control"]) {
 
 		Control interval;
@@ -239,15 +232,19 @@ void Solver::Load_data(std::string& filename) {
 		//save time interval to vector
 		TimeVect.push_back(interval);
 		//print time interval
-		std::cout << "\nTime interval Added: \n";
+		std::cout << " \nTime interval Added:";
 		interval.Print_Interval();
 	}
+	Print_Pauses();
 
 	T = data["data"]["time"];
 	step = data["data"]["step"];
+	method = data["data"]["ode"];
+	std::cout << "Times:\n\nTime loaded: " << T << std::endl;
+	std::cout << "Step loaded: " << step << std::endl;
 
-	Write_initial();
 	file.close();
+	Print_Pauses();
 }
 
 bool Solver::Check_Collision(Planet& Planet) {
@@ -320,77 +317,166 @@ bool Solver::UseEngine(double& time) {
 	return false;
 }
 
+void Solver::Calculate_Net() {
 
-void Solver::Euler() {
+	//will engine be used in this iteration 
+	engine_used = false;
+	//engine is used only if time intervals vector is not empty
+	if (!TimeVect.empty()) {
+		engine_used = UseEngine(time);
+	}
+	//remove fuel used 
+	if (engine_used) {
+		fuel_used = Particle.fuel_usage * step; //calculate fuel used
+		Particle.fuel -= fuel_used;
+		Particle.mass -= fuel_used;
+	}
+	//if engine not used
+	else {
+		Particle.engine.Zero();
+	}
+	//calculate net force
+	Particle.force = { Particle.engine.x + grav_forces.x , grav_forces.y + Particle.engine.y, grav_forces.z + Particle.engine.z };
+}
 
-	Vector3D grav_forces;
-	Vector3D distance;
-	bool engine_used = false;
+void Solver::Calculate_Grav() {
 
-	for (time = step; time < T + step; time += step) {
+	for (auto& p : Planets) {
 
-		double fuel_used = Particle.fuel_usage * step;
+		//check if ship collides with the planet
+		if (Check_Collision(p)) {
+			exit(0); //stop simulation
+		}
+
+		//distance between ship and planets
+		distance = { abs(Particle.position.x - p.position.x), abs(Particle.position.y - p.position.y), abs(Particle.position.z - p.position.z) };
+
+		//Potential energy
+		Particle.PotentialEnergy -= {(G* p.mass* Particle.mass) / (distance.x), (G* p.mass* Particle.mass) / (distance.y), (G* p.mass* Particle.mass) / (distance.z)};
+
+		//gravitational forces
+		grav_forces += {((G* p.mass* Particle.mass) / (distance.x * distance.x)), ((G* p.mass* Particle.mass) / (distance.y * distance.y)), ((G* p.mass* Particle.mass) / (distance.z * distance.z))
+		};
+
+	}
+
+	//Change initial value of energy and start printing energy
+	if (time == step) {
+		Particle.KineticEnergy = { Particle.velocity.x * Particle.mass / 2, Particle.velocity.y * Particle.mass / 2 , Particle.velocity.z * Particle.mass / 2 };
+		kinetic_data.front() = Particle.KineticEnergy;
+		potential_data.front() = Particle.PotentialEnergy;
+		Particle.CalculatedEnergy = true;
+	}
+
+}
+
+void Solver::Euler(double& time, double& velocity, double& position, double& dt, double& force, double& mass) {
+
+	//Particle.velocity += {(Particle.force.x / Particle.mass)* step, (Particle.force.y / Particle.mass)* step, (Particle.force.z / Particle.mass)* step };
+	//Particle.position += Particle.velocity;
+	velocity += dvdt(time + dt, velocity,force,mass);
+	position += dxdt(time + dt , velocity, position);
+}
+
+//runge kutta method
+void Solver::Runge_Kutta(double& time, double& velocity, double& position, double& dt, double& force, double& mass) {
+
+	double  k1, k2, k3, k4, h1, h2, h3, h4;
+
+	k1 = dvdt(time, velocity, force, mass);
+	h1 = dxdt(time, velocity, position);
+	k2 = dvdt(time + dt / 2., velocity + k1 / 2., force, mass);
+	h2 = dxdt(time + dt / 2., velocity + k1 / 2., position + h1 / 2.);
+	k3 = dvdt(time + dt / 2., velocity + k2 / 2., force, mass);
+	h3 = dxdt(time + dt / 2., velocity + k2 / 2., position + h2 / 2.);
+	k4 = dvdt(time + dt, velocity + k3, force, mass);
+	h4 = dxdt(time + dt, velocity + k3, position + h3);
+
+	velocity += 1.0 / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4);
+	position += 1.0 / 6.0 * (h1 + 2 * h2 + 2 * h3 + h4);
+}
+
+void Solver::Midpoint(double& time, double& velocity, double& position, double& dt, double& force, double& mass) {
+
+	double mx,mv;
+
+	mv = dvdt(time, velocity, force, mass);
+	mx = dxdt(time, velocity, position);
+	velocity += dvdt(time + dt / 2., velocity + mv / 2., force, mass);
+	position += dxdt(time + dt / 2., velocity + mv / 2., position + mx / 2.);
+}
+
+//Adam - Bashforth method
+void Solver::Adams_Bashford(double& time, double& velocity, double& position, double& dt, double& force, double& mass) {
+
+	double  k0, k1, k2, k3, h0, h1, h2, h3;
+
+	//Calculate initial steps RK4
+		k1 = dvdt(time, velocity, force, mass);
+		h1 = dxdt(time, velocity, position);
+		k2 = dvdt(time + dt / 2., velocity + k1 / 2., force, mass);
+		h2 = dxdt(time + dt / 2., velocity + k1 / 2., position + h1 / 2.);
+		k3 = dvdt(time + dt / 2., velocity + k2 / 2., force, mass);
+		h3 = dxdt(time + dt / 2., velocity + k2 / 2., position + h2 / 2.);
+
+	//Predictor
+		k0 = (23. * k1 - 16. * k2 + 5. * k3) / 12.;
+		h0 = (23. * h1 - 16. * h2 + 5. * h3) / 12.;
+
+	//Corrector
+		velocity += (9. * k0 + 19. * k1 - 5. * k2 + k3) / 24.;
+		position += (9. * h0 + 19. * h1 - 5. * h2 + h3) / 24.;
+}
+
+void Solver::Solve() {
+
+	for (time = 0; time < T; time += step) {
+
 		grav_forces.Zero();
 		distance.Zero();
 		Particle.PotentialEnergy.Zero();
 
 		if (!Planets.empty()) { 
-			for (auto& p : Planets) {
-
-				//check if ship collides with the planet
-				if (Check_Collision(p)) {
-					exit(0); //stop simulation
-				}
-
-				//distance between ship and planets
-				distance = { abs(Particle.position.x - p.position.x), abs(Particle.position.y - p.position.y), abs(Particle.position.z - p.position.z) };
-
-				//Potential energy
-				Particle.PotentialEnergy -= {(G* p.mass* Particle.mass) / (distance.x), (G* p.mass* Particle.mass) / (distance.y), (G* p.mass* Particle.mass) / (distance.z)};
-
-				//gravitational forces
-				grav_forces += {((G * p.mass * Particle.mass) / (distance.x * distance.x)), ((G * p.mass * Particle.mass) / (distance.y * distance.y)), ((G * p.mass * Particle.mass) / (distance.z * distance.z))
-			};
-				
-			}
-
-			//Change initial value of energy and start printing energy
-			if (time == step) {
-				Particle.KineticEnergy = { Particle.velocity.x * Particle.mass / 2, Particle.velocity.y * Particle.mass / 2 , Particle.velocity.z * Particle.mass / 2 };
-				kinetic_data.front() = Particle.KineticEnergy;
-				potential_data.front() = Particle.PotentialEnergy;
-				Particle.CalculatedEnergy = true;
-			}
-
+			
+			Calculate_Grav();
 		}	
-			//check forces only if particle has a mass 
+			//use forces only if particle has a mass 
 		if (Particle.mass > 0) {
+			
+			Calculate_Net();
 
-			//will engine be used in this iteration 
-			engine_used = false;
-			//engine is used only if time intervals vector is not empty
-			if (!TimeVect.empty()) {
-				engine_used = UseEngine(time);
+			//combine xyz into one
+			switch (method) {
+			case adams:
+				Adams_Bashford(time, Particle.velocity.x, Particle.position.x, step, Particle.force.x, Particle.mass); //x
+				Adams_Bashford(time, Particle.velocity.y, Particle.position.y, step, Particle.force.y, Particle.mass); //y
+				Adams_Bashford(time, Particle.velocity.z, Particle.position.z, step, Particle.force.z, Particle.mass); //z
+				break;
+			case euler:
+				Euler(time, Particle.velocity.x, Particle.position.x, step, Particle.force.x, Particle.mass); 
+				Euler(time, Particle.velocity.y, Particle.position.y, step, Particle.force.y, Particle.mass); 
+				Euler(time, Particle.velocity.z, Particle.position.z, step, Particle.force.z, Particle.mass); 
+				break;
+			case midpoint:
+				Midpoint(time, Particle.velocity.x, Particle.position.x, step, Particle.force.x, Particle.mass); 
+				Midpoint(time, Particle.velocity.y, Particle.position.y, step, Particle.force.y, Particle.mass); 
+				Midpoint(time, Particle.velocity.z, Particle.position.z, step, Particle.force.z, Particle.mass); 
+				break;
+			case runge:
+				Runge_Kutta(time, Particle.velocity.x, Particle.position.x, step, Particle.force.x, Particle.mass); 
+				Runge_Kutta(time, Particle.velocity.y, Particle.position.y, step, Particle.force.y, Particle.mass); 
+				Runge_Kutta(time, Particle.velocity.z, Particle.position.z, step, Particle.force.z, Particle.mass); 
+				break;
 			}
-			//remove fuel used 
-			if (engine_used) {
-				Particle.fuel -= fuel_used;
-				Particle.mass -= fuel_used;
-			}
-			//if engine not used
-			else {
-				Particle.engine.Zero();
-			}
-			//calculate velocites
-			Particle.force = { Particle.engine.x + grav_forces.x , grav_forces.y + Particle.engine.y, grav_forces.z + Particle.engine.z };
-			Particle.velocity += {(Particle.force.x / Particle.mass) * step, (Particle.force.y / Particle.mass) * step, (Particle.force.z / Particle.mass) * step };
-			}
+		}
 
-		//position
-		Particle.position += Particle.velocity;
-
+		else {
+			Particle.position += Particle.velocity; //if no mass only update velocity
+		}
+		
 		//displacment
-		Particle.displacement += Particle.velocity;
+		if (position_data.empty()) Particle.displacement += Particle.position;
+		else Particle.displacement += {Particle.position.x - position_data.back().x, Particle.position.y - position_data.back().y, Particle.position.z - position_data.back().z};
 
 		//kinetic energy 
 		Particle.KineticEnergy = { Particle.velocity.x * Particle.mass / 2, Particle.velocity.y * Particle.mass / 2 , Particle.velocity.z * Particle.mass / 2 };
@@ -400,8 +486,10 @@ void Solver::Euler() {
 	}
 
 	//display information at the end of motion:
-	std::cout << "\nTime of motion: " << T << " seconds" << std::endl;
+	std::cout << "Result: \n" << "\nTime of motion: " << T << " seconds" << std::endl;
 	Particle.Print_info();
+	Print_Pauses();
+	
 }
 
 void Solver::Push_Back() {
@@ -434,7 +522,8 @@ void Solver::Save_data() {
 		<< " EngineFx[N]" << " EngineFy[N]" << " EngineFz[N]"
 		<< " NetFx[N]" << " NetFy[N]" << " NetFz[N]"
 		<< " EKinx[J]" << " EKiny[J]" << " EKinz[J]"
-		<< " EPotx[J]" << " EPoty[J]" << " EPotz[J]" << std::endl;
+		<< " EPotx[J]" << " EPoty[J]" << " EPotz[J]" 
+		<< " Method" << std::endl;
 
 	for (auto step = 0; step < time_data.size(); step++) {
 
@@ -445,34 +534,9 @@ void Solver::Save_data() {
 			<< " " << force_data[step].x << " " << force_data[step].y << " " << force_data[step].z 
 			<< " " << kinetic_data[step].x << " " << kinetic_data[step].y << " " << kinetic_data[step].z
 			<< " " << potential_data[step].x << " " << potential_data[step].y << " " << potential_data[step].z
-			<< std::endl;
+			<< " " << method << std::endl;
 	}
 	file.close();
-
-	Save_planets();
 }
 
-void Solver::Save_planets() {
-
-	std::string particle_name = Particle.name;
-	std::string filename = "./Simulation_History/Planets/";
-	particle_name.append("_planets.txt");
-	filename.append(particle_name);
-	std::ofstream file;
-	file.open(filename.c_str());
-	file.precision(10);
-
-	//write informational line
-	file << "Name " << "Mass[kg] " << "Radius[m]"
-		<< " Posx(t)[m]" << " Posy(t)[m]" << " Posz(t)[m]" << std::endl;
-
-
-	for (auto& p : Planets) {
-
-		file << p.name << " " << p.mass << " " << p.radius << " " << p.position.x
-			<< " " << p.position.y << " " << p.position.z << " " << std::endl;
-	}
-
-	file.close();
-}
 
