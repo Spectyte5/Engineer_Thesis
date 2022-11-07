@@ -43,7 +43,7 @@ void Solver::Populate() {
 }
 
 void Solver::Setup() {
-
+	Print_Pauses();
 	Particle.User_set(); //setup particle
 	Print_Pauses();
 	Populate(); //setup planets
@@ -68,7 +68,9 @@ void Solver::Setup() {
 		std::cout << "Invalid Selection\n";
 	}
 
-	std::cout << "\nEngine Control Section: " << std::endl;
+	Print_Pauses();
+
+	std::cout << "Engine Control Section: " << std::endl;
 
 	while (std::cout << "How many time intervals will be used for engine control?" && !(std::cin >> interval_num) || (interval_num < 0)){
 		std::cin.clear();
@@ -139,10 +141,12 @@ void Solver::Save_json() {
 	data["data"]["step"] = step;
 	data["data"]["ode"] = method;
 
+	Print_Pauses();
 	std::string path = "./JSON_files/" + Particle.name + ".json";
 	std::ofstream file(path.c_str());
 	file << std::setw(4) << data << std::endl;
 	std::cout << "File saved Successfully as: " << path << std::endl;
+	Print_Pauses();
 }
 
 std::ifstream Solver::Load_file(std::string sys_path, std::string filepath, std::string extenstion) {
@@ -430,11 +434,15 @@ void Solver::Adams_Bashford(double& time, double& velocity, double& position, do
 
 void Solver::Solve() {
 
+	//save initial position
+	Vector3D initial_pos = Particle.position;
+
 	for (time = 0; time < T; time += step) {
 
 		grav_forces.Zero();
 		distance.Zero();
 		Particle.PotentialEnergy.Zero();
+
 
 		if (!Planets.empty()) { 
 			
@@ -471,12 +479,11 @@ void Solver::Solve() {
 		}
 
 		else {
-			Particle.position += Particle.velocity; //if no mass only update velocity
+			Particle.position += Particle.velocity; //if no mass only update position and displacement
 		}
-		
-		//displacment
-		if (position_data.empty()) Particle.displacement += Particle.position;
-		else Particle.displacement += {Particle.position.x - position_data.back().x, Particle.position.y - position_data.back().y, Particle.position.z - position_data.back().z};
+
+		//displacement
+		Particle.displacement = { Particle.position.x - initial_pos.x, Particle.position.y - initial_pos.y, Particle.position.z - initial_pos.z };
 
 		//kinetic energy 
 		Particle.KineticEnergy = { Particle.velocity.x * Particle.mass / 2, Particle.velocity.y * Particle.mass / 2 , Particle.velocity.z * Particle.mass / 2 };
@@ -491,6 +498,8 @@ void Solver::Solve() {
 	Print_Pauses();
 	
 }
+
+
 
 void Solver::Push_Back() {
 

@@ -23,7 +23,6 @@ Point_Particle::Point_Particle(std::string n, double rx, double ry, double rz, d
 }
 
 void Point_Particle::Print_info() {
-	
 	std::cout << this->name << " Data: " << "\n mass: " << this->mass << " kg" << "\n position : " 
 		<< this->position << " m" << "\n displacement : " << this->displacement << " m" << "\n velocity : "
 		<< this->velocity << " m/s" << "\n engine force : " << this->engine << " N" << "\n net force : " 
