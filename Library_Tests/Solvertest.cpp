@@ -22,6 +22,12 @@ public:
 		solver.step = step;
 	} 
 
+	void SetUp(double step, double time, int ode) {
+		solver.T = time;
+		solver.step = step;
+		solver.method = ode;
+	}
+
 	bool CheckShip(double rx, double ry, double rz, double vx, double vy, double vz, double ex, double ey, double ez, double fx, double fy, double fz, double m) {
 
 		//mass
@@ -89,6 +95,14 @@ TEST_F(SolverTest, Adams_BashfordFunctionNoEngineNoPlanets) {
 	ASSERT_TRUE(CheckShip(100, 100, 100, 10, 10, 10, 0, 0, 0, 0, 0, 0, 1000));
 }
 
+TEST_F(SolverTest, Adams_BashfordFunctionWithEngineNoPlanets) {
+	SetUp(0.1, 50, 0);
+	Set_Stats(0, 0, 0, 0, 0, 0, 9500, 500, 10);
+	Engine_Set({ 0,0,0 }, { 50,0,0}, { 500,0,0 });
+	solver.Solve();
+	ASSERT_NEAR(solver.Particle.velocity.x, 2.5648, 0.001);
+}
+
 //Euler tests
 TEST_F(SolverTest, EulerFunctionMassOnly) {
 	SetUp(1);
@@ -102,6 +116,14 @@ TEST_F(SolverTest, EulerFunctionNoEngineNoPlanets) {
 	Set_Stats(0, 0, 0, 10, 10, 10, 1000, 0, 0);
 	solver.Solve();
 	ASSERT_TRUE(CheckShip(100, 100, 100, 10, 10, 10, 0, 0, 0, 0, 0, 0, 1000));
+}
+
+TEST_F(SolverTest, EulerFunctionWithEngineNoPlanets) {
+	SetUp(0.1, 50, 1);
+	Set_Stats(0, 0, 0, 0, 0, 0, 9500, 500, 10);
+	Engine_Set({ 0,0,0 }, { 50,0,0 }, { 500,0,0 });
+	solver.Solve();
+	ASSERT_NEAR(solver.Particle.velocity.x, 2.5648, 0.001);
 }
 
 //Midpoint tests
@@ -120,6 +142,14 @@ TEST_F(SolverTest, MidpointFunctionNoEngineNoPlanets) {
 	ASSERT_TRUE(CheckShip(100, 100, 100, 10, 10, 10, 0, 0, 0, 0, 0, 0, 1000));
 }
 
+TEST_F(SolverTest, MidpointFunctionWithEngineNoPlanets) {
+	SetUp(0.1, 50, 2);
+	Set_Stats(0, 0, 0, 0, 0, 0, 9500, 500, 10);
+	Engine_Set({ 0,0,0 }, { 50,0,0 }, { 500,0,0 });
+	solver.Solve();
+	ASSERT_NEAR(solver.Particle.velocity.x, 2.5648, 0.001);
+}
+
 //Runge-Kutta tests
 
 TEST_F(SolverTest, RungeKuttaFunctionMassOnly) {
@@ -134,4 +164,12 @@ TEST_F(SolverTest, RungeKuttaFunctionNoEngineNoPlanets) {
 	Set_Stats(0, 0, 0, 10, 10, 10, 1000, 0, 0);
 	solver.Solve();
 	ASSERT_TRUE(CheckShip(100, 100, 100, 10, 10, 10, 0, 0, 0, 0, 0, 0, 1000));
+}
+
+TEST_F(SolverTest, RungeKuttaFunctionWithEngineNoPlanets) {
+	SetUp(0.1, 50, 3);
+	Set_Stats(0, 0, 0, 0, 0, 0, 9500, 500, 10);
+	Engine_Set({ 0,0,0 }, { 50,0,0 }, { 500,0,0 });
+	solver.Solve();
+	ASSERT_NEAR(solver.Particle.velocity.x, 2.5648, 0.001);
 }

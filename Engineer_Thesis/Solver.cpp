@@ -375,11 +375,19 @@ void Solver::Calculate_Grav() {
 }
 
 void Solver::Euler(double& time, double& velocity, double& position, double& dt, double& force, double& mass) {
+	
+	velocity += dt * dvdt(time, velocity, force, mass);
+	position += dt * dxdt(time, velocity, position);
+}
 
-	//Particle.velocity += {(Particle.force.x / Particle.mass)* step, (Particle.force.y / Particle.mass)* step, (Particle.force.z / Particle.mass)* step };
-	//Particle.position += Particle.velocity;
-	velocity += dvdt(time + dt, velocity,force,mass);
-	position += dxdt(time + dt , velocity, position);
+void Solver::Midpoint(double& time, double& velocity, double& position, double& dt, double& force, double& mass) {
+
+	double mx, mv;
+
+	mv = dt * dvdt(time, velocity, force, mass);
+	mx = dt * dxdt(time, velocity, position);
+	velocity += dt * dvdt(time + dt / 2., velocity + mv / 2., force, mass);
+	position += dt * dxdt(time + dt / 2., velocity + mv / 2., position + mx / 2.);
 }
 
 //runge kutta method
@@ -387,27 +395,17 @@ void Solver::Runge_Kutta(double& time, double& velocity, double& position, doubl
 
 	double  k1, k2, k3, k4, h1, h2, h3, h4;
 
-	k1 = dvdt(time, velocity, force, mass);
-	h1 = dxdt(time, velocity, position);
-	k2 = dvdt(time + dt / 2., velocity + k1 / 2., force, mass);
-	h2 = dxdt(time + dt / 2., velocity + k1 / 2., position + h1 / 2.);
-	k3 = dvdt(time + dt / 2., velocity + k2 / 2., force, mass);
-	h3 = dxdt(time + dt / 2., velocity + k2 / 2., position + h2 / 2.);
-	k4 = dvdt(time + dt, velocity + k3, force, mass);
-	h4 = dxdt(time + dt, velocity + k3, position + h3);
+	k1 = dt * dvdt(time, velocity, force, mass);
+	h1 = dt * dxdt(time, velocity, position);
+	k2 = dt * dvdt(time + dt / 2., velocity + k1 / 2., force, mass);
+	h2 = dt * dxdt(time + dt / 2., velocity + k1 / 2., position + h1 / 2.);
+	k3 = dt * dvdt(time + dt / 2., velocity + k2 / 2., force, mass);
+	h3 = dt * dxdt(time + dt / 2., velocity + k2 / 2., position + h2 / 2.);
+	k4 = dt * dvdt(time + dt, velocity + k3, force, mass);
+	h4 = dt * dxdt(time + dt, velocity + k3, position + h3);
 
 	velocity += 1.0 / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4);
 	position += 1.0 / 6.0 * (h1 + 2 * h2 + 2 * h3 + h4);
-}
-
-void Solver::Midpoint(double& time, double& velocity, double& position, double& dt, double& force, double& mass) {
-
-	double mx,mv;
-
-	mv = dvdt(time, velocity, force, mass);
-	mx = dxdt(time, velocity, position);
-	velocity += dvdt(time + dt / 2., velocity + mv / 2., force, mass);
-	position += dxdt(time + dt / 2., velocity + mv / 2., position + mx / 2.);
 }
 
 //Adam - Bashforth method
@@ -416,20 +414,20 @@ void Solver::Adams_Bashford(double& time, double& velocity, double& position, do
 	double  k0, k1, k2, k3, h0, h1, h2, h3;
 
 	//Calculate initial steps RK4
-		k1 = dvdt(time, velocity, force, mass);
-		h1 = dxdt(time, velocity, position);
-		k2 = dvdt(time + dt / 2., velocity + k1 / 2., force, mass);
-		h2 = dxdt(time + dt / 2., velocity + k1 / 2., position + h1 / 2.);
-		k3 = dvdt(time + dt / 2., velocity + k2 / 2., force, mass);
-		h3 = dxdt(time + dt / 2., velocity + k2 / 2., position + h2 / 2.);
+		k1 = dt * dvdt(time, velocity, force, mass);
+		h1 = dt * dxdt(time, velocity, position);
+		k2 = dt * dvdt(time + dt / 2., velocity + k1 / 2., force, mass);
+		h2 = dt * dxdt(time + dt / 2., velocity + k1 / 2., position + h1 / 2.);
+		k3 = dt * dvdt(time + dt / 2., velocity + k2 / 2., force, mass);
+		h3 = dt * dxdt(time + dt / 2., velocity + k2 / 2., position + h2 / 2.);
 
 	//Predictor
-		k0 = (23. * k1 - 16. * k2 + 5. * k3) / 12.;
-		h0 = (23. * h1 - 16. * h2 + 5. * h3) / 12.;
+	    k0 = (23. * k3 - 16. * k2 + 5. * k1) / 12.;
+		h0 = (23. * h3 - 16. * h2 + 5. * h1) / 12.;
 
 	//Corrector
-		velocity += (9. * k0 + 19. * k1 - 5. * k2 + k3) / 24.;
-		position += (9. * h0 + 19. * h1 - 5. * h2 + h3) / 24.;
+		velocity += (5. * k0 + 8. * k3 - k2) / 12.;
+		position += (5. * h0 + 8. * h3 - h2) / 12.;
 }
 
 void Solver::Solve() {
@@ -487,7 +485,8 @@ void Solver::Solve() {
 
 		//kinetic energy 
 		Particle.KineticEnergy = { Particle.velocity.x * Particle.mass / 2, Particle.velocity.y * Particle.mass / 2 , Particle.velocity.z * Particle.mass / 2 };
-		
+		Particle.CalculatedEnergy = true;
+
 		//save values to vectors
 		Push_Back();
 	}
