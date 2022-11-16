@@ -3,7 +3,7 @@
 
 int main(int argc, char* argv[])
 {
-	Solver method;
+	Solver solver;
 	
 		enum choice { create, load};
 		std::string filename = "";
@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
 		}
 
 		else {
-			method.Print_Pauses();
+			solver.Print_Pauses();
 			std::cout << "Welcome to C++ library for numerical calculations related to basic spacecraft motion issues." << std::endl;
 			while (std::cout << "Please choose if you want to: \n 0.Create new simulation \n 1.Load simulation from JSON file " && !(std::cin >> option) || (option < 0 || option > 1)) {
 				std::cin.clear();
@@ -26,19 +26,19 @@ int main(int argc, char* argv[])
 
 			switch (option) {
 			case create:
-				method.Setup();
-				method.Save_json();
-				method.Solve();
-				method.Save_data();
+				solver.Setup();
+				solver.Save_json();
+				solver.Solve();
+				solver.Save_data();
 				break;
 			case load:
-				method.Load_data(filename);
-				method.Solve();
-				method.Save_data();
+				solver.Load_data(filename);
+				solver.Solve();
+				solver.Save_data();
 				break;
 			default:
 				std::cout << "Invalid Selection\n";
-				method.Print_Pauses();
+				solver.Print_Pauses();
 				break;
 			}
 		}

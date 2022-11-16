@@ -2,35 +2,22 @@
 #include "Vector3D.h"
 #include <vector>
 
-
-class Vehicle {
-
-public:
-	
-	std::string name;
-	Vector3D position;
-	Vector3D velocity;
-	Vector3D engine = { 0,0,0 };
-	Vector3D force = { 0,0,0 };
-	Vector3D displacement = { 0,0,0 };
-	Vector3D PotentialEnergy = { 0,0,0 };
-	Vector3D KineticEnergy;
-	double mass;
-	double fuel;
-	double fuel_usage;
-	bool CalculatedEnergy = 0;
-};
-
 //body having no size, no rotation (Point-mass)
-class Point_Particle : public Vehicle {
+class Vehicle {
 	
 public:
+
+	std::string name;
+	Vector3D position, velocity, engine = { 0,0,0 }, force = { 0,0,0 }, displacement = { 0,0,0 }, PotentialEnergy = { 0,0,0 }, KineticEnergy;
+	double mass = 0,fuel = 0, fuel_usage = 0;
+	bool CalculatedEnergy = 0;
+
 	//Basic Constructor
-	Point_Particle() {};
+	Vehicle() {};
 	//Constructor for the point-mass
-	Point_Particle(std::string n, double rx, double ry, double rz, double vx, double vy, double vz, double m, double fuel, double fuel_usage);
-	//Print information about a Particle
+	Vehicle(std::string n, double rx, double ry, double rz, double vx, double vy, double vz, double m, double fuel, double fuel_usage);
+	//Print information about the Ship
 	void Print_info();
-	//Allow user to set values of the particle.
+	//Allow user to set values of the Ship.
 	void User_set();
 };

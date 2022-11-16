@@ -16,7 +16,7 @@ public:
 	std::vector <Vector3D> position_data, velocity_data, engine_data, force_data, kinetic_data, potential_data;
 	std::vector <Planet> Planets;
 	std::vector <Control> TimeVect;
-	Point_Particle Particle = Point_Particle("", 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	Vehicle Ship = Vehicle("", 0, 0, 0, 0, 0, 0, 0, 0, 0);
 	Vector3D grav_forces, distance;
 	bool engine_used = false;
 	enum ode { adams, euler, midpoint, runge};
@@ -32,6 +32,8 @@ public:
 	void Populate();
 	//Create all simulation elements
 	void Setup();
+	//validate json files to a schema
+	bool Validate_Json(std::string& filename);
 	//Save simulation elements as a Json file
 	void Save_json();
 	//display files in directory and open

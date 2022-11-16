@@ -1,6 +1,6 @@
 #include "Vehicle.h"
 
-Point_Particle::Point_Particle(std::string n, double rx, double ry, double rz, double vx, double vy, double vz, double m, double f, double u) {
+Vehicle::Vehicle(std::string n, double rx, double ry, double rz, double vx, double vy, double vz, double m, double f, double u) {
 
 	//name 
 	name = n;
@@ -22,8 +22,9 @@ Point_Particle::Point_Particle(std::string n, double rx, double ry, double rz, d
 	KineticEnergy = { velocity.x * mass / 2, velocity.y * mass / 2 , velocity.z * mass / 2 };
 }
 
-void Point_Particle::Print_info() {
-	std::cout << this->name << " Data: " << "\n mass: " << this->mass << " kg" << "\n position : " 
+void Vehicle::Print_info() {
+
+	std::cout << std::fixed << this->name << " Data: " << "\n mass: " << this->mass << " kg" << "\n position : "
 		<< this->position << " m" << "\n displacement : " << this->displacement << " m" << "\n velocity : "
 		<< this->velocity << " m/s" << "\n engine force : " << this->engine << " N" << "\n net force : " 
 		<< this->force << " N" << "\n fuel mass : " << this->fuel << " kg" << "\n fuel consumption : " << this->fuel_usage << " kg/s";
@@ -37,7 +38,7 @@ void Point_Particle::Print_info() {
 	std::cout << "\n";
 }
 
-void Point_Particle::User_set() {
+void Vehicle::User_set() {
 	std::cout << "Input name of the particle: ";
 	std::cin >> name;
 	std::cout << "Input mass in kg: ";

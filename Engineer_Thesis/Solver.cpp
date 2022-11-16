@@ -1,6 +1,7 @@
 #include "Solver.h"
 #include <filesystem>
 #include "../nlohmann/json.hpp"
+#include "../valijson/valijson_nlohmann_bundled.hpp"
 
 void Solver::Populate() {
 
@@ -44,7 +45,7 @@ void Solver::Populate() {
 
 void Solver::Setup() {
 	Print_Pauses();
-	Particle.User_set(); //setup particle
+	Ship.User_set(); //setup particle
 	Print_Pauses();
 	Populate(); //setup planets
 	Print_Pauses();
@@ -98,22 +99,75 @@ void Solver::Setup() {
 	}
 }
 
+bool Solver::Validate_Json(std::string& filename) {
+
+	using namespace valijson;
+	using namespace valijson::adapters;
+	using json = nlohmann::json;
+
+	// Load JSON schema document with Valijson helper function
+	json mySchemaDoc;
+	if (!valijson::utils::loadDocument("./JSON_files/Schema/schema.json", mySchemaDoc)) {
+		throw std::runtime_error("Failed to load schema document");
+		return false;
+	}
+
+	// Parse JSON schema content using valijson
+	Schema mySchema;
+	SchemaParser parser;
+	NlohmannJsonAdapter mySchemaAdapter(mySchemaDoc);
+	parser.populateSchema(mySchemaAdapter, mySchema);
+	
+	//Load document to validate :
+	json myTargetDoc;
+	if (!valijson::utils::loadDocument(filename, myTargetDoc)) {
+		throw std::runtime_error("Failed to load target document");
+		return false;
+	}
+
+	// Perform validation
+	Validator validator(Validator::kStrongTypes);
+	ValidationResults results;
+	NlohmannJsonAdapter targetDocumentAdapter(myTargetDoc);
+	if (!validator.validate(mySchema, targetDocumentAdapter, &results)) {
+		std::cerr << "Validation failed." << std::endl;
+		ValidationResults::Error error;
+		unsigned int errorNum = 1;
+		while (results.popError(error)) {
+
+			std::string context;
+			std::vector<std::string>::iterator itr = error.context.begin();
+			for (; itr != error.context.end(); itr++) {
+				context += *itr;
+			}
+
+			std::cerr << "Error #" << errorNum << std::endl
+				<< "  context: " << context << std::endl
+				<< "  desc:    " << error.description << std::endl;
+			++errorNum;
+		}
+		return false;
+	}
+	return true;
+}
+
+
 void Solver::Save_json() {
 
 	using json = nlohmann::json;
 
 	// create an empty structure
 	json data;
-	data["ship"]["name"] = Particle.name;
-	data["ship"]["position"][0] = Particle.position.x;
-	data["ship"]["position"][1] = Particle.position.y;
-	data["ship"]["position"][2] = Particle.position.z;
-	data["ship"]["velocity"][0] = Particle.velocity.x;
-	data["ship"]["velocity"][1] = Particle.velocity.y;
-	data["ship"]["velocity"][2] = Particle.velocity.z;
-	data["ship"]["mass"] = Particle.mass;
-	data["ship"]["fuel"] = Particle.fuel;
-	data["ship"]["fuel_usage"] = Particle.fuel_usage;
+	data["ship"]["name"] = Ship.name;
+	data["ship"]["position"][0] = Ship.position.x;
+	data["ship"]["position"][1] = Ship.position.y;
+	data["ship"]["position"][2] = Ship.position.z;
+	data["ship"]["velocity"][0] = Ship.velocity.x;
+	data["ship"]["velocity"][1] = Ship.velocity.y;
+	data["ship"]["velocity"][2] = Ship.velocity.z;
+	data["ship"]["mass"] = Ship.mass;
+	data["ship"]["fuel"] = Ship.fuel;
+	data["ship"]["fuel_usage"] = Ship.fuel_usage;
 
 	for (auto& p : Planets) {
 		auto i = &p - &Planets[0];
@@ -142,7 +196,7 @@ void Solver::Save_json() {
 	data["data"]["ode"] = method;
 
 	Print_Pauses();
-	std::string path = "./JSON_files/" + Particle.name + ".json";
+	std::string path = "./JSON_files/" + Ship.name + ".json";
 	std::ofstream file(path.c_str());
 	file << std::setw(4) << data << std::endl;
 	std::cout << "File saved Successfully as: " << path << std::endl;
@@ -152,7 +206,7 @@ void Solver::Save_json() {
 std::ifstream Solver::Load_file(std::string sys_path, std::string filepath, std::string extenstion) {
 
 	std::ifstream file;
-	std::string file_name;
+	std::string filename, fullname;
 
 	Print_Pauses();
 	std::cout << "Data available: " << std::endl;
@@ -166,20 +220,25 @@ std::ifstream Solver::Load_file(std::string sys_path, std::string filepath, std:
 
 	while (1) {
 		std::cout << "Enter Name of your file: " << std::endl;
-		std::cin >> file_name;
-		std::string filename = filepath;;
-		filename.append(file_name + extenstion.c_str());
-		file.open(filename.c_str());
+		std::cin >> filename;
+		fullname = filepath;
+		fullname.append(filename + extenstion.c_str());
+		file.open(fullname.c_str());
 		if (!file) {
 			std::cin.clear();
 			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-			filename.clear();
+			fullname.clear();
 			std::cout << "\nFile not found\n" << std::endl;
 		}
 		else {
 			break;
 		}
 	}
+
+	if (extenstion == ".json") {
+		if (!Validate_Json(fullname)) exit(0);
+	}
+
 	Print_Pauses();
 	return file;
 }
@@ -190,6 +249,7 @@ void Solver::Load_data(std::string& filename) {
 
 	if (filename != "") {
 		file.open(filename);
+		if (!Validate_Json(filename)) exit(0);
 	}
 
 	else {
@@ -199,15 +259,15 @@ void Solver::Load_data(std::string& filename) {
 	using json = nlohmann::json;
 	json data = json::parse(file);
 
-	Particle.name = data["ship"]["name"];
-	Particle.position = { data["ship"]["position"][0], data["ship"]["position"][1], data["ship"]["position"][2] };
-	Particle.velocity = { data["ship"]["velocity"][0], data["ship"]["velocity"][1], data["ship"]["velocity"][2] };
-	Particle.mass = data["ship"]["mass"];
-	Particle.fuel = data["ship"]["fuel"];
-	Particle.fuel_usage = data["ship"]["fuel_usage"];
+	Ship.name = data["ship"]["name"];
+	Ship.position = { data["ship"]["position"][0], data["ship"]["position"][1], data["ship"]["position"][2] };
+	Ship.velocity = { data["ship"]["velocity"][0], data["ship"]["velocity"][1], data["ship"]["velocity"][2] };
+	Ship.mass = data["ship"]["mass"];
+	Ship.fuel = data["ship"]["fuel"];
+	Ship.fuel_usage = data["ship"]["fuel_usage"];
 	
 	std::cout << "Ship:\n\n" << "Ship loaded: " << std::endl;
-	Particle.Print_info();
+	Ship.Print_info();
 	Print_Pauses();
 
 	std::cout << "Planets: \n";
@@ -253,15 +313,13 @@ void Solver::Load_data(std::string& filename) {
 
 bool Solver::Check_Collision(Planet& Planet) {
 
-	Vector3D Distances = { pow((Particle.position.x - Planet.position.x), 2),
-		pow((Particle.position.y - Planet.position.y), 2),
-		pow((Particle.position.z - Planet.position.z), 2) };
 
-	// distance between the centre and given point
-	double distance = Distances.x + Distances.y + Distances.z;
+	double distance = pow(Ship.position.x - Planet.position.x,2) 
+		+ pow(Ship.position.y - Planet.position.y, 2) 
+		+ pow(Ship.position.z - Planet.position.z, 2);
 
 	if (distance < (Planet.radius * Planet.radius)) {
-		std::cout << "\nShip: " << Particle.name << ", has crashed into Planet: " << Planet.name
+		std::cout << "\n" << Ship.name << ", has crashed into Planet: " << Planet.name
 			<< " !\n********************************************************" << std::endl;
 		return true;
 	}
@@ -270,7 +328,7 @@ bool Solver::Check_Collision(Planet& Planet) {
 	else if (distance == (Planet.radius * Planet.radius)) {
 
 		//if it is on surface it can be a start from the planet and a try to escape the orbit, so i return it as not a full collistion, 
-		std::cout << "\nShip: " << Particle.name << ", is located on Planet: " << " Surface" << Planet.name << "!" << std::endl;
+		std::cout << "\n " << Ship.name << ", is located on " << Planet.name << "'s Surface !" << std::endl;
 		return false;
 	}
 
@@ -288,28 +346,28 @@ bool Solver::UseEngine(double& time) {
 		used = false;
 		
 		//first check if there is fuel:
-		if (Particle.fuel <= 0) {
+		if (Ship.fuel <= 0) {
 			std::cout << "\nRun Out of fuel, engines won't be used from now on..." << std::endl;
 			TimeVect.clear(); //if there is no fuel there is no reason to check engine usage
 			break;
 		}
 
-		//check if simulation step is contained in one of the intervals
+		//check if simulation step is contained in one of the intervals and if first interval is not 0 sec long
 		//x
-		if (time >= i.timestart.x && time <= i.timeend.x ) {
-			Particle.engine.x = i.engforce.x; //if yes turn on the engine
+		if (time >= i.timestart.x && time <= i.timeend.x && i.timeend.x != 0) {
+			Ship.engine.x = i.engforce.x; //if yes turn on the engine
 			used = true;
 		}
 
 		//y
-		if (time >= i.timestart.y && time <= i.timeend.y) {
-			Particle.engine.y = i.engforce.y;
+		if (time >= i.timestart.y && time <= i.timeend.y && i.timeend.y != 0) {
+			Ship.engine.y = i.engforce.y;
 			used = true;
 		}
 
 		//z
-		if (time >= i.timestart.z && time <= i.timeend.z) {
-			Particle.engine.z = i.engforce.z;
+		if (time >= i.timestart.z && time <= i.timeend.z && i.timeend.z != 0) {
+			Ship.engine.z = i.engforce.z;
 			used = true;
 		}
 
@@ -331,16 +389,16 @@ void Solver::Calculate_Net() {
 	}
 	//remove fuel used 
 	if (engine_used) {
-		fuel_used = Particle.fuel_usage * step; //calculate fuel used
-		Particle.fuel -= fuel_used;
-		Particle.mass -= fuel_used;
+		fuel_used = Ship.fuel_usage * step; //calculate fuel used
+		Ship.fuel -= fuel_used;
+		Ship.mass -= fuel_used;
 	}
 	//if engine not used
 	else {
-		Particle.engine.Zero();
+		Ship.engine.Zero();
 	}
 	//calculate net force
-	Particle.force = { Particle.engine.x + grav_forces.x , grav_forces.y + Particle.engine.y, grav_forces.z + Particle.engine.z };
+	Ship.force = { Ship.engine.x + grav_forces.x , grav_forces.y + Ship.engine.y, grav_forces.z + Ship.engine.z };
 }
 
 void Solver::Calculate_Grav() {
@@ -353,23 +411,31 @@ void Solver::Calculate_Grav() {
 		}
 
 		//distance between ship and planets
-		distance = { abs(Particle.position.x - p.position.x), abs(Particle.position.y - p.position.y), abs(Particle.position.z - p.position.z) };
+		distance = { abs(Ship.position.x - p.position.x), abs(Ship.position.y - p.position.y), abs(Ship.position.z - p.position.z) };
 
 		//Potential energy
-		Particle.PotentialEnergy -= {(G* p.mass* Particle.mass) / (distance.x), (G* p.mass* Particle.mass) / (distance.y), (G* p.mass* Particle.mass) / (distance.z)};
+		if (distance.x > 0) {
+			Ship.PotentialEnergy.x -= (G * p.mass * Ship.mass) / (distance.x);
+			grav_forces.x -= (G* p.mass* Ship.mass) / (distance.x * distance.x);
+		}
 
-		//gravitational forces
-		grav_forces += {((G* p.mass* Particle.mass) / (distance.x * distance.x)), ((G* p.mass* Particle.mass) / (distance.y * distance.y)), ((G* p.mass* Particle.mass) / (distance.z * distance.z))
-		};
+		if (distance.y > 0) {
+			Ship.PotentialEnergy.y -= (G * p.mass * Ship.mass) / (distance.y);
+			grav_forces.y -= (G * p.mass * Ship.mass) / (distance.y * distance.y);
+		}
 
+		if (distance.z > 0) {
+			Ship.PotentialEnergy.z -= (G * p.mass * Ship.mass) / (distance.z);
+			grav_forces.z -= (G * p.mass * Ship.mass) / (distance.z * distance.z);
+		}
 	}
 
 	//Change initial value of energy and start printing energy
 	if (time == step) {
-		Particle.KineticEnergy = { Particle.velocity.x * Particle.mass / 2, Particle.velocity.y * Particle.mass / 2 , Particle.velocity.z * Particle.mass / 2 };
-		kinetic_data.front() = Particle.KineticEnergy;
-		potential_data.front() = Particle.PotentialEnergy;
-		Particle.CalculatedEnergy = true;
+		Ship.KineticEnergy = { Ship.velocity.x * Ship.mass / 2, Ship.velocity.y * Ship.mass / 2 , Ship.velocity.z * Ship.mass / 2 };
+		kinetic_data.front() = Ship.KineticEnergy;
+		potential_data.front() = Ship.PotentialEnergy;
+		Ship.CalculatedEnergy = true;
 	}
 
 }
@@ -383,7 +449,6 @@ void Solver::Euler(double& time, double& velocity, double& position, double& dt,
 void Solver::Midpoint(double& time, double& velocity, double& position, double& dt, double& force, double& mass) {
 
 	double mx, mv;
-
 	mv = dt * dvdt(time, velocity, force, mass);
 	mx = dt * dxdt(time, velocity, position);
 	velocity += dt * dvdt(time + dt / 2., velocity + mv / 2., force, mass);
@@ -433,13 +498,13 @@ void Solver::Adams_Bashford(double& time, double& velocity, double& position, do
 void Solver::Solve() {
 
 	//save initial position
-	Vector3D initial_pos = Particle.position;
+	Vector3D initial_pos = Ship.position;
 
 	for (time = 0; time < T; time += step) {
 
 		grav_forces.Zero();
 		distance.Zero();
-		Particle.PotentialEnergy.Zero();
+		Ship.PotentialEnergy.Zero();
 
 
 		if (!Planets.empty()) { 
@@ -447,45 +512,45 @@ void Solver::Solve() {
 			Calculate_Grav();
 		}	
 			//use forces only if particle has a mass 
-		if (Particle.mass > 0) {
+		if (Ship.mass > 0) {
 			
 			Calculate_Net();
 
 			//combine xyz into one
 			switch (method) {
 			case adams:
-				Adams_Bashford(time, Particle.velocity.x, Particle.position.x, step, Particle.force.x, Particle.mass); //x
-				Adams_Bashford(time, Particle.velocity.y, Particle.position.y, step, Particle.force.y, Particle.mass); //y
-				Adams_Bashford(time, Particle.velocity.z, Particle.position.z, step, Particle.force.z, Particle.mass); //z
+				Adams_Bashford(time, Ship.velocity.x, Ship.position.x, step, Ship.force.x, Ship.mass); //x
+				Adams_Bashford(time, Ship.velocity.y, Ship.position.y, step, Ship.force.y, Ship.mass); //y
+				Adams_Bashford(time, Ship.velocity.z, Ship.position.z, step, Ship.force.z, Ship.mass); //z
 				break;
 			case euler:
-				Euler(time, Particle.velocity.x, Particle.position.x, step, Particle.force.x, Particle.mass); 
-				Euler(time, Particle.velocity.y, Particle.position.y, step, Particle.force.y, Particle.mass); 
-				Euler(time, Particle.velocity.z, Particle.position.z, step, Particle.force.z, Particle.mass); 
+				Euler(time, Ship.velocity.x, Ship.position.x, step, Ship.force.x, Ship.mass); 
+				Euler(time, Ship.velocity.y, Ship.position.y, step, Ship.force.y, Ship.mass); 
+				Euler(time, Ship.velocity.z, Ship.position.z, step, Ship.force.z, Ship.mass); 
 				break;
 			case midpoint:
-				Midpoint(time, Particle.velocity.x, Particle.position.x, step, Particle.force.x, Particle.mass); 
-				Midpoint(time, Particle.velocity.y, Particle.position.y, step, Particle.force.y, Particle.mass); 
-				Midpoint(time, Particle.velocity.z, Particle.position.z, step, Particle.force.z, Particle.mass); 
+				Midpoint(time, Ship.velocity.x, Ship.position.x, step, Ship.force.x, Ship.mass); 
+				Midpoint(time, Ship.velocity.y, Ship.position.y, step, Ship.force.y, Ship.mass); 
+				Midpoint(time, Ship.velocity.z, Ship.position.z, step, Ship.force.z, Ship.mass); 
 				break;
 			case runge:
-				Runge_Kutta(time, Particle.velocity.x, Particle.position.x, step, Particle.force.x, Particle.mass); 
-				Runge_Kutta(time, Particle.velocity.y, Particle.position.y, step, Particle.force.y, Particle.mass); 
-				Runge_Kutta(time, Particle.velocity.z, Particle.position.z, step, Particle.force.z, Particle.mass); 
+				Runge_Kutta(time, Ship.velocity.x, Ship.position.x, step, Ship.force.x, Ship.mass); 
+				Runge_Kutta(time, Ship.velocity.y, Ship.position.y, step, Ship.force.y, Ship.mass); 
+				Runge_Kutta(time, Ship.velocity.z, Ship.position.z, step, Ship.force.z, Ship.mass); 
 				break;
 			}
 		}
 
 		else {
-			Particle.position += Particle.velocity; //if no mass only update position and displacement
+			Ship.position += Ship.velocity; //if no mass only update position and displacement
 		}
 
 		//displacement
-		Particle.displacement = { Particle.position.x - initial_pos.x, Particle.position.y - initial_pos.y, Particle.position.z - initial_pos.z };
+		Ship.displacement = { Ship.position.x - initial_pos.x, Ship.position.y - initial_pos.y, Ship.position.z - initial_pos.z };
 
 		//kinetic energy 
-		Particle.KineticEnergy = { Particle.velocity.x * Particle.mass / 2, Particle.velocity.y * Particle.mass / 2 , Particle.velocity.z * Particle.mass / 2 };
-		Particle.CalculatedEnergy = true;
+		Ship.KineticEnergy = { Ship.velocity.x * Ship.mass / 2, Ship.velocity.y * Ship.mass / 2 , Ship.velocity.z * Ship.mass / 2 };
+		Ship.CalculatedEnergy = true;
 
 		//save values to vectors
 		Push_Back();
@@ -493,7 +558,7 @@ void Solver::Solve() {
 
 	//display information at the end of motion:
 	std::cout << "Result: \n" << "\nTime of motion: " << T << " seconds" << std::endl;
-	Particle.Print_info();
+	Ship.Print_info();
 	Print_Pauses();
 	
 }
@@ -503,19 +568,19 @@ void Solver::Solve() {
 void Solver::Push_Back() {
 
 	time_data.push_back(time);
-	mass_data.push_back(Particle.mass);
-	fuel_data.push_back(Particle.fuel);
-	position_data.push_back(Particle.position);
-	velocity_data.push_back(Particle.velocity);
-	engine_data.push_back(Particle.engine);
-	force_data.push_back(Particle.force);
-	kinetic_data.push_back(Particle.KineticEnergy);
-	potential_data.push_back(Particle.PotentialEnergy);
+	mass_data.push_back(Ship.mass);
+	fuel_data.push_back(Ship.fuel);
+	position_data.push_back(Ship.position);
+	velocity_data.push_back(Ship.velocity);
+	engine_data.push_back(Ship.engine);
+	force_data.push_back(Ship.force);
+	kinetic_data.push_back(Ship.KineticEnergy);
+	potential_data.push_back(Ship.PotentialEnergy);
 }
 
 void Solver::Save_data() {
 
-	std::string particle_name = Particle.name;
+	std::string particle_name = Ship.name;
 	std::string filename = "./Simulation_History/Ships/";
 	particle_name.append(".txt");
 	filename.append(particle_name);
@@ -535,7 +600,7 @@ void Solver::Save_data() {
 
 	for (auto step = 0; step < time_data.size(); step++) {
 
-		file << time_data[step] << " " << mass_data[step] << " " << fuel_data[step] << " " << Particle.fuel_usage
+		file << time_data[step] << " " << mass_data[step] << " " << fuel_data[step] << " " << Ship.fuel_usage
 			<< " " << position_data[step].x << " " << position_data[step].y << " " << position_data[step].z
 			<< " " << velocity_data[step].x << " " << velocity_data[step].y << " " << velocity_data[step].z
 			<< " " << engine_data[step].x << " " << engine_data[step].y << " " << engine_data[step].z

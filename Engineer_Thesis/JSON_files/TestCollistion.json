@@ -1,0 +1,54 @@
+{
+    "control": [
+        {
+            "endtime": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "force": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "starttime": [
+                0.0,
+                0.0,
+                0.0
+            ]
+        }
+    ],
+    "data": {
+        "ode": 3,
+        "step": 10,
+        "time": 550.0
+    },
+    "planets": [
+      {
+        "name": "PlanetTest",
+        "mass": 100000,
+        "radius": 5000,
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+  ],
+    "ship": {
+        "fuel": 0.0,
+        "fuel_usage": 0.0,
+        "mass": 1000.0,
+        "name": "TestCaseCC",
+        "position": [
+         5000,
+         0.0,
+         0.0
+        ],
+        "velocity": [
+        1000,
+        0.0,
+        0.0
+        ]
+    }
+}
