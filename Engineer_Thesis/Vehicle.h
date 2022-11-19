@@ -8,8 +8,8 @@ class Vehicle {
 public:
 
 	std::string name;
-	Vector3D position, velocity, engine = { 0,0,0 }, force = { 0,0,0 }, displacement = { 0,0,0 }, PotentialEnergy = { 0,0,0 }, KineticEnergy;
-	double mass = 0,fuel = 0, fuel_usage = 0;
+	Vector3D position, velocity, engine = { 0,0,0 }, force = { 0,0,0 }, displacement = { 0,0,0 };
+	double mass = 0, fuel = 0, fuel_usage = 0, PotentialEnergy = 0, KineticEnergy;
 	bool CalculatedEnergy = 0;
 
 	//Basic Constructor

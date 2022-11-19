@@ -39,20 +39,16 @@ with open('../Engineer_Thesis/Simulation_History/Ships/%s.txt' % name) as f:
     forx = [float(line.split()[13]) for line in lines]
     fory = [float(line.split()[14]) for line in lines]
     forz = [float(line.split()[15]) for line in lines]
-    kinx = [float(line.split()[16]) for line in lines]
-    kiny = [float(line.split()[17]) for line in lines]
-    kinz = [float(line.split()[18]) for line in lines]
-    potx = [float(line.split()[19]) for line in lines]
-    poty = [float(line.split()[20]) for line in lines]
-    potz = [float(line.split()[21]) for line in lines]
-    meth = [int(line.split()[22]) for line in lines]
+    ekin = [float(line.split()[16]) for line in lines]
+    epot = [float(line.split()[17]) for line in lines]
+    meth = [int(line.split()[18]) for line in lines]
 
 
 #append method to the name
 name += "_" + Method(meth[0]).name
 
 #Mass and fuel
-plt.subplot(2, 4, 1)
+plt.subplot(2, 3, 1)
 plt.plot(time, mass, label="mass")
 plt.plot(time, fuel, label="fuel")
 plt.title("Mass in time plot")
@@ -61,7 +57,7 @@ plt.ylabel("Mass[kg]")
 plt.legend()
 
 #Position
-plt.subplot(2, 4, 2)
+plt.subplot(2, 3, 2)
 plt.plot(time, posx, label="x")
 plt.plot(time, posy, label="y")
 plt.plot(time, posz, label="z")
@@ -71,7 +67,7 @@ plt.ylabel("Position[m]")
 plt.legend()
 
 #Velocity
-plt.subplot(2, 4, 3)
+plt.subplot(2, 3, 3)
 plt.plot(time, velx, label="x")
 plt.plot(time, vely, label="y")
 plt.plot(time, velz, label="z")
@@ -81,7 +77,7 @@ plt.ylabel("Velocity[m/s]")
 plt.legend()
 
 #Engine force
-plt.subplot(2, 4, 4)
+plt.subplot(2, 3, 4)
 plt.plot(time, engx, label="x")
 plt.plot(time, engy, label="y")
 plt.plot(time, engz, label="z")
@@ -91,7 +87,7 @@ plt.ylabel("Force[N]")
 plt.legend()
 
 #Force
-plt.subplot(2, 4, 5)
+plt.subplot(2, 3, 5)
 plt.plot(time, forx, label="x")
 plt.plot(time, fory, label="y")
 plt.plot(time, forz, label="z")
@@ -100,22 +96,11 @@ plt.xlabel("Time[s]")
 plt.ylabel("Force[N]")
 plt.legend()
 
-#Kinetic Energy
-plt.subplot(2, 4, 6)
-plt.plot(time, kinx, label="x")
-plt.plot(time, kiny, label="y")
-plt.plot(time, kinz, label="z")
-plt.title("Kinetic Energy in time plot")
-plt.xlabel("Time[s]")
-plt.ylabel("Energy[J]")
-plt.legend()
-
-#Potential Energy
-plt.subplot(2, 4, 7)
-plt.plot(time, kinx, label="x")
-plt.plot(time, kiny, label="y")
-plt.plot(time, kinz, label="z")
-plt.title("Potential Energy in time plot")
+#Energy
+plt.subplot(2, 3, 6)
+plt.plot(time, ekin, label="Kinetic")
+plt.plot(time, epot, label="Potential")
+plt.title("Energy in time plot")
 plt.xlabel("Time[s]")
 plt.ylabel("Energy[J]")
 plt.legend()

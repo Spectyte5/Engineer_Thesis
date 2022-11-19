@@ -12,8 +12,8 @@ class Solver {
 
 public:
 	const double G = 667259.0 / 10000000000000000.0;
-	std::vector <double> time_data, mass_data, fuel_data;
-	std::vector <Vector3D> position_data, velocity_data, engine_data, force_data, kinetic_data, potential_data;
+	std::vector <double> time_data, mass_data, fuel_data, kinetic_data, potential_data;
+	std::vector <Vector3D> position_data, velocity_data, engine_data, force_data;
 	std::vector <Planet> Planets;
 	std::vector <Control> TimeVect;
 	Vehicle Ship = Vehicle("", 0, 0, 0, 0, 0, 0, 0, 0, 0);

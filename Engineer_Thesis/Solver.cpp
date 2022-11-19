@@ -1,7 +1,7 @@
 #include "Solver.h"
 #include <filesystem>
-#include "../nlohmann/json.hpp"
-#include "../valijson/valijson_nlohmann_bundled.hpp"
+#include <json.hpp>
+#include <valijson_nlohmann_bundled.hpp>
 
 void Solver::Populate() {
 
@@ -413,27 +413,23 @@ void Solver::Calculate_Grav() {
 		//distance between ship and planets
 		distance = { abs(Ship.position.x - p.position.x), abs(Ship.position.y - p.position.y), abs(Ship.position.z - p.position.z) };
 
-		//Potential energy
 		if (distance.x > 0) {
-			Ship.PotentialEnergy.x -= (G * p.mass * Ship.mass) / (distance.x);
 			grav_forces.x -= (G* p.mass* Ship.mass) / (distance.x * distance.x);
 		}
 
 		if (distance.y > 0) {
-			Ship.PotentialEnergy.y -= (G * p.mass * Ship.mass) / (distance.y);
 			grav_forces.y -= (G * p.mass * Ship.mass) / (distance.y * distance.y);
 		}
 
 		if (distance.z > 0) {
-			Ship.PotentialEnergy.z -= (G * p.mass * Ship.mass) / (distance.z);
 			grav_forces.z -= (G * p.mass * Ship.mass) / (distance.z * distance.z);
 		}
+		//Potential energy
+		Ship.PotentialEnergy -= (G * p.mass * Ship.mass) / (distance.x + distance.y + distance.z);
 	}
 
 	//Change initial value of energy and start printing energy
 	if (time == step) {
-		Ship.KineticEnergy = { Ship.velocity.x * Ship.mass / 2, Ship.velocity.y * Ship.mass / 2 , Ship.velocity.z * Ship.mass / 2 };
-		kinetic_data.front() = Ship.KineticEnergy;
 		potential_data.front() = Ship.PotentialEnergy;
 		Ship.CalculatedEnergy = true;
 	}
@@ -504,7 +500,7 @@ void Solver::Solve() {
 
 		grav_forces.Zero();
 		distance.Zero();
-		Ship.PotentialEnergy.Zero();
+		Ship.PotentialEnergy = 0;
 
 
 		if (!Planets.empty()) { 
@@ -549,7 +545,7 @@ void Solver::Solve() {
 		Ship.displacement = { Ship.position.x - initial_pos.x, Ship.position.y - initial_pos.y, Ship.position.z - initial_pos.z };
 
 		//kinetic energy 
-		Ship.KineticEnergy = { Ship.velocity.x * Ship.mass / 2, Ship.velocity.y * Ship.mass / 2 , Ship.velocity.z * Ship.mass / 2 };
+		Ship.KineticEnergy = Ship.mass / 2 * (pow(Ship.velocity.x, 2) + pow(Ship.velocity.y, 2) + pow(Ship.velocity.z, 2));
 		Ship.CalculatedEnergy = true;
 
 		//save values to vectors
@@ -562,8 +558,6 @@ void Solver::Solve() {
 	Print_Pauses();
 	
 }
-
-
 
 void Solver::Push_Back() {
 
@@ -589,14 +583,12 @@ void Solver::Save_data() {
 	file.precision(10);
 	
 	//write informational line
-	file << "Time[s] " << "Mass[kg] " << "Fuel[kg]" << " FuelUsage[kg/s]" 
-		<< " Posx(t)[m]" << " Posy(t)[m]" << " Posz(t)[m]" 
-		<< " Velx(t)[m/s]" << " Vely(t)[m/s]" << " Velz(t)[m/s]"
-		<< " EngineFx[N]" << " EngineFy[N]" << " EngineFz[N]"
-		<< " NetFx[N]" << " NetFy[N]" << " NetFz[N]"
-		<< " EKinx[J]" << " EKiny[J]" << " EKinz[J]"
-		<< " EPotx[J]" << " EPoty[J]" << " EPotz[J]" 
-		<< " Method" << std::endl;
+	file << std::fixed << " Time[s]" << " Mass[kg]" << " Fuel[kg]" << " FuelUsage[kg/s]" 
+		<< " Position.x[m]" << " Position.y[m]" << " Position.z[m]" 
+		<< " Velocity.x[m/s]" << " Velocity.y[m/s]" << " Velocity.z[m/s]"
+		<< " Engine Force.x[N]" << " Engine Force.y[N]" << " Engine Force.z[N]"
+		<< " Net Force.x[N]" << " Net Force.y[N]" << " Net Force.z[N]"
+		<< " Kinetic Energy[J]" << " Potential Energy[J]"  << " Method" << std::endl;
 
 	for (auto step = 0; step < time_data.size(); step++) {
 
@@ -605,9 +597,7 @@ void Solver::Save_data() {
 			<< " " << velocity_data[step].x << " " << velocity_data[step].y << " " << velocity_data[step].z
 			<< " " << engine_data[step].x << " " << engine_data[step].y << " " << engine_data[step].z
 			<< " " << force_data[step].x << " " << force_data[step].y << " " << force_data[step].z 
-			<< " " << kinetic_data[step].x << " " << kinetic_data[step].y << " " << kinetic_data[step].z
-			<< " " << potential_data[step].x << " " << potential_data[step].y << " " << potential_data[step].z
-			<< " " << method << std::endl;
+			<< " " << kinetic_data[step] << " " << potential_data[step] << " " << method << std::endl;
 	}
 	file.close();
 }

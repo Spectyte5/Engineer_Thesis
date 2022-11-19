@@ -19,7 +19,7 @@ Vehicle::Vehicle(std::string n, double rx, double ry, double rz, double vx, doub
 	fuel_usage = u;
 
 	//Energy
-	KineticEnergy = { velocity.x * mass / 2, velocity.y * mass / 2 , velocity.z * mass / 2 };
+	KineticEnergy = mass / 2 * (pow(velocity.x, 2) + pow(velocity.y, 2) + pow(velocity.z, 2));  //ek = 1/2 * mv^2
 }
 
 void Vehicle::Print_info() {
