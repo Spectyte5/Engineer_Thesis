@@ -29,32 +29,10 @@ public:
 		solver.method = ode;
 	}
 
-	bool CheckShip(double rx, double ry, double rz, double vx, double vy, double vz, double ex, double ey, double ez, double fx, double fy, double fz, double m) {
-
-		//mass
-		if (solver.Ship.mass != m) return false;
-		
-		//position
-		if (!solver.Ship.position.VectorsEqual({ rx, ry, rz })) return false;
-
-		//add displacement check
-
-		//velocities
-		if (!solver.Ship.velocity.VectorsEqual({ vx, vy, vz })) return false;
-
-		//engine
-		if (!solver.Ship.engine.VectorsEqual({ ex, ey, ez })) return false;
-
-		//forces
-		if (!solver.Ship.force.VectorsEqual({ fx, fy, fz })) return false;
-
-		return true;
-	}
-
 	void CheckValues(Vector3D position, Vector3D displacement, Vector3D velocity, Vector3D engine, Vector3D force, double mass, double tolerance) {
 
 		//mass
-		ASSERT_DOUBLE_EQ(solver.Ship.mass,mass);
+		ASSERT_NEAR(solver.Ship.mass, mass, tolerance);
 
 		//position
 		ASSERT_NEAR(solver.Ship.position.x, position.x, tolerance);
@@ -140,14 +118,14 @@ TEST_F(SolverTest, Adams_BashfordMassOnly) {
 	SetUp(0);
 	Set_Stats(0, 0, 0, 0, 0, 0, 1000, 0, 0);
 	solver.Solve();
-	ASSERT_TRUE(CheckShip(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000));
+	CheckValues({ 0,0,0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, 1000, 0.1);
 }
 
 TEST_F(SolverTest, Adams_BashfordInitialVelocity) {
 	SetUp(0);
 	Set_Stats(0, 0, 0, 10, 10, 10, 1000, 0, 0);
 	solver.Solve();
-	ASSERT_TRUE(CheckShip(100, 100, 100, 10, 10, 10, 0, 0, 0, 0, 0, 0, 1000));
+	CheckValues({ 100, 100, 100 }, { 100, 100, 100 }, { 10, 10, 10 }, { 0, 0, 0 }, { 0, 0, 0 }, 1000, 0.1);
 }
 
 TEST_F(SolverTest, Adams_BashfordWithEngineNoPlanets) {
@@ -155,7 +133,16 @@ TEST_F(SolverTest, Adams_BashfordWithEngineNoPlanets) {
 	Set_Stats(100, -100, 100, 0, 0, 0, 9500, 500, 10);
 	Engine_Set({ 0,0,0 }, { 50,50,50}, { 500,3000,-950 });
 	solver.Solve();
-	CheckValues({ 163.5,281.5,-20.7 }, { 63.5, 381.5, -120.7 }, { 2.5648, 15.3888, -4.873 }, { 500, 3000, -950 }, { 500, 3000, -950 }, 9500, 1.5);
+	CheckValues({ 163.5,281.5,-20.7 }, { 63.5685, 381.4111, -120.7802 }, { 2.5648, 15.3888, -4.873 }, { 500, 3000, -950 }, { 500, 3000, -950 }, 9500, 1.5);
+}
+
+TEST_F(SolverTest, Adams_BashfordWithEngineWithPlanet) {
+	SetUp(1, 465, 0);
+	Set_Stats(0, 1738100.0, 0, 0, 0, 0, 2150, 2350, 5.05376);
+	Engine_Set({ 0,0,0 }, { 0,465,0 }, { 0,15418.6,0 });
+	Planet_Set(73460000000000000000000.0, 1738100.0, 0, 0, 0, "Moon");
+	solver.Solve();
+	CheckValues({ 0,2030178,0 }, { 0, 292078, 0 }, { 0, 1566, 0 }, { 0, 15418.6, 0 }, { 0, 12852, 0 }, 2150, 0.7);
 }
 
 //Euler tests
@@ -163,14 +150,14 @@ TEST_F(SolverTest, EulerMassOnly) {
 	SetUp(1);
 	Set_Stats(0, 0, 0, 0, 0, 0, 1000, 0, 0);
 	solver.Solve();
-	ASSERT_TRUE(CheckShip(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000));
+	CheckValues({ 0,0,0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, 1000, 0.1);
 }
 
 TEST_F(SolverTest, EulerInitialVelocity) {
 	SetUp(1);
 	Set_Stats(0, 0, 0, 10, 10, 10, 1000, 0, 0);
 	solver.Solve();
-	ASSERT_TRUE(CheckShip(100, 100, 100, 10, 10, 10, 0, 0, 0, 0, 0, 0, 1000));
+	CheckValues({ 100, 100, 100 }, { 100, 100, 100 }, { 10, 10, 10 }, { 0, 0, 0 }, { 0, 0, 0 }, 1000, 0.1);
 }
 
 TEST_F(SolverTest, EulerWithEngineNoPlanets) {
@@ -178,7 +165,16 @@ TEST_F(SolverTest, EulerWithEngineNoPlanets) {
 	Set_Stats(100, -100, 100, 0, 0, 0, 9500, 500, 10);
 	Engine_Set({ 0,0,0 }, { 50,50,50 }, { 500,3000,-950 });
 	solver.Solve();
-	CheckValues({ 163.5,281.5,-20.7 }, { 63.5, 381.5, -120.7 }, { 2.5648, 15.3888, -4.873 }, { 500, 3000, -950 }, { 500, 3000, -950 }, 9500, 1.5);
+	CheckValues({ 163.5,281.5,-20.7 }, { 63.5685, 381.4111, -120.7802 }, { 2.5648, 15.3888, -4.873 }, { 500, 3000, -950 }, { 500, 3000, -950 }, 9500, 1.0);
+}
+
+TEST_F(SolverTest, EulerWithEngineWithPlanet) {
+	SetUp(1, 465, 1);
+	Set_Stats(0, 1738100.0, 0, 0, 0, 0, 2150, 2350, 5.05376);
+	Engine_Set({ 0,0,0 }, { 0,465,0 }, { 0,15418.6,0 });
+	Planet_Set(73460000000000000000000.0, 1738100.0, 0, 0, 0, "Moon");
+	solver.Solve();
+	CheckValues({ 0,2031136,0 }, { 0, 293036, 0 }, { 0, 1566, 0 }, { 0, 15418.6, 0 }, { 0, 12854, 0 }, 2150, 1.0);
 }
 
 //Midpoint tests
@@ -186,14 +182,14 @@ TEST_F(SolverTest, MidpointMassOnly) {
 	SetUp(2);
 	Set_Stats(0, 0, 0, 0, 0, 0, 1000, 0, 0);
 	solver.Solve();
-	ASSERT_TRUE(CheckShip(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000));
+	CheckValues({ 0,0,0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, 1000, 0.1);
 }
 
 TEST_F(SolverTest, MidpointInitialVelocity) {
 	SetUp(2);
 	Set_Stats(0, 0, 0, 10, 10, 10, 1000, 0, 0);
 	solver.Solve();
-	ASSERT_TRUE(CheckShip(100, 100, 100, 10, 10, 10, 0, 0, 0, 0, 0, 0, 1000));
+	CheckValues({ 100, 100, 100 }, { 100, 100, 100 }, { 10, 10, 10 }, { 0, 0, 0 }, { 0, 0, 0 }, 1000, 0.1);
 }
 
 TEST_F(SolverTest, MidpointWithEngineNoPlanets) {
@@ -201,7 +197,16 @@ TEST_F(SolverTest, MidpointWithEngineNoPlanets) {
 	Set_Stats(100, -100, 100, 0, 0, 0, 9500, 500, 10);
 	Engine_Set({ 0,0,0 }, { 50,50,50 }, { 500,3000,-950 });
 	solver.Solve();
-	CheckValues({ 163.5,281.5,-20.7 }, { 63.5, 381.5, -120.7 }, { 2.5648, 15.3888, -4.873 }, { 500, 3000, -950 }, { 500, 3000, -950 }, 9500, 1.5);
+	CheckValues({ 163.5,281.5,-20.7 }, { 63.5685, 381.4111, -120.7802 }, { 2.5648, 15.3888, -4.873 }, { 500, 3000, -950 }, { 500, 3000, -950 }, 9500, 1.6);
+}
+
+TEST_F(SolverTest, MidpointWithEngineWithPlanet) {
+	SetUp(1, 465, 2);
+	Set_Stats(0, 1738100.0, 0, 0, 0, 0, 2150, 2350, 5.05376);
+	Engine_Set({ 0,0,0 }, { 0,465,0 }, { 0,15418.6,0 });
+	Planet_Set(73460000000000000000000.0, 1738100.0, 0, 0, 0, "Moon");
+	solver.Solve();
+	CheckValues({ 0,2031953,0 }, { 0, 293853, 0 }, { 0, 1566, 0 }, { 0, 15418.6, 0 }, { 0, 12856, 0 }, 2150, 1.0);
 }
 
 
@@ -211,14 +216,14 @@ TEST_F(SolverTest, RungeKuttaMassOnly) {
 	SetUp(3);
 	Set_Stats(0, 0, 0, 0, 0, 0, 1000, 0, 0);
 	solver.Solve();
-	ASSERT_TRUE(CheckShip(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000));
+	CheckValues({ 0,0,0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, 1000, 0.1);
 }
 
 TEST_F(SolverTest, RungeKuttaInitialVelocity) {
 	SetUp(3);
 	Set_Stats(0, 0, 0, 10, 10, 10, 1000, 0, 0);
 	solver.Solve();
-	ASSERT_TRUE(CheckShip(100, 100, 100, 10, 10, 10, 0, 0, 0, 0, 0, 0, 1000));
+	CheckValues({ 100, 100, 100 }, { 100, 100, 100 }, { 10, 10, 10 }, { 0, 0, 0 }, { 0, 0, 0 }, 1000, 0.1);
 }
 
 TEST_F(SolverTest, RungeKuttaWithEngineNoPlanets) {
@@ -226,14 +231,14 @@ TEST_F(SolverTest, RungeKuttaWithEngineNoPlanets) {
 	Set_Stats(100, -100, 100, 0, 0, 0, 9500, 500, 10);
 	Engine_Set({ 0,0,0 }, { 50,50,50 }, { 500,3000,-950 });
 	solver.Solve();
-	CheckValues({ 163.5,281.5,-20.7 }, { 63.5, 381.5, -120.7 }, { 2.5648, 15.3888, -4.873 }, { 500, 3000, -950 }, { 500, 3000, -950 }, 9500, 1.5);
+	CheckValues({ 163.5,281.5,-20.7 }, { 63.5685, 381.4111, -120.7802 }, { 2.5648, 15.3888, -4.873 }, { 500, 3000, -950 }, { 500, 3000, -950 }, 9500, 0.5);
 }
 
 TEST_F(SolverTest, RungeKuttaWithEngineWithPlanet) {
-	SetUp(10, 550, 3);
-	Set_Stats(6371000, 0, 0, 11200, 0, 0, 10000, 0, 0);
-	Engine_Set({ 0,0,0 }, { 0,0,0 }, { 0,0,0 });
-	Planet_Set(5972200000000000000000000.0, 6371000, 0, 0, 0, "Earth");
+	SetUp(1, 465, 3);
+	Set_Stats(0, 1738100.0, 0, 0, 0, 0, 2150, 2350, 5.05376);
+	Engine_Set({ 0,0,0 }, { 0,465,0 }, { 0,15418.6,0 });
+	Planet_Set(73460000000000000000000.0, 1738100.0, 0, 0, 0, "Moon");
 	solver.Solve();
-	//CheckValues({ 163.5,0,0 }, { 63.5, 0, 0 }, { 2.5648, 0, 0 }, { 500, 0, 0 }, { 500, 0, 0 }, 9500, 1.5);
+	CheckValues({ 0,2030320,0 }, { 0, 292220, 0 }, { 0, 1566, 0 }, {0, 15418.6, 0 }, { 0, 12852, 0 }, 2150, 1.0);
 }

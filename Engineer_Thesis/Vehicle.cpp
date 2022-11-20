@@ -41,7 +41,7 @@ void Vehicle::Print_info() {
 void Vehicle::User_set() {
 	std::cout << "Input name of the particle: ";
 	std::cin >> name;
-	std::cout << "Input mass in kg: ";
+	std::cout << "Input dry mass (ship without fuel) in kg: ";
 	std::cin >> mass;
 	std::cout << "Input position x,y,z: ";
 	std::cin >> position.x >> position.y >> position.z;
