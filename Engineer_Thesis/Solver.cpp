@@ -319,7 +319,7 @@ bool Solver::Check_Collision(Planet& Planet) {
 		+ pow(Ship.position.z - Planet.position.z, 2);
 
 	if (distance < (Planet.radius * Planet.radius)) {
-		std::cout << "\n" << Ship.name << ", has crashed into Planet: " << Planet.name
+		std::cout << "\n" << Ship.name << ", has crashed into Planet: " << Planet.name << " At time: " << time << " [s]"
 			<< " !\n********************************************************" << std::endl;
 		return true;
 	}
@@ -379,6 +379,32 @@ bool Solver::UseEngine(double& time) {
 	return false;
 }
 
+void Solver::Calculate_Grav() {
+
+	double r;
+
+	for (auto& p : Planets) {
+
+		//check if ship collides with the planet
+		if (Check_Collision(p)) {
+			exit(0); //stop simulation
+		}
+		//distance between ship and planet
+		r = sqrt(pow(Ship.position.x - p.position.x, 2)
+			+ pow(Ship.position.y - p.position.y, 2)
+			+ pow(Ship.position.z - p.position.z, 2));
+		//xyz distance
+		distance = { Ship.position.x - p.position.x, Ship.position.y - p.position.y, Ship.position.z - p.position.z };
+
+		grav_forces.x -= (G * p.mass * Ship.mass * distance.x) / pow(r, 3);
+		grav_forces.y -= (G * p.mass * Ship.mass * distance.y) / pow(r, 3);
+		grav_forces.z -= (G * p.mass * Ship.mass * distance.z) / pow(r, 3);
+
+		//Potential energy
+		Ship.PotentialEnergy -= (G * p.mass * Ship.mass) / r;
+	}
+}
+
 void Solver::Calculate_Net() {
 
 	//will engine be used in this iteration 
@@ -398,42 +424,7 @@ void Solver::Calculate_Net() {
 		Ship.engine.Zero();
 	}
 	//calculate net force
-	Ship.force = { Ship.engine.x + grav_forces.x , grav_forces.y + Ship.engine.y, grav_forces.z + Ship.engine.z };
-}
-
-void Solver::Calculate_Grav() {
-
-	for (auto& p : Planets) {
-
-		//check if ship collides with the planet
-		if (Check_Collision(p)) {
-			exit(0); //stop simulation
-		}
-
-		//distance between ship and planets
-		distance = { abs(Ship.position.x - p.position.x), abs(Ship.position.y - p.position.y), abs(Ship.position.z - p.position.z) };
-
-		if (distance.x > 0) {
-			grav_forces.x -= (G* p.mass* Ship.mass) / (distance.x * distance.x);
-		}
-
-		if (distance.y > 0) {
-			grav_forces.y -= (G * p.mass * Ship.mass) / (distance.y * distance.y);
-		}
-
-		if (distance.z > 0) {
-			grav_forces.z -= (G * p.mass * Ship.mass) / (distance.z * distance.z);
-		}
-		//Potential energy
-		Ship.PotentialEnergy -= (G * p.mass * Ship.mass) / (distance.x + distance.y + distance.z);
-	}
-
-	//Change initial value of energy and start printing energy
-	if (time == step) {
-		potential_data.front() = Ship.PotentialEnergy;
-		Ship.CalculatedEnergy = true;
-	}
-
+	Ship.force = { Ship.engine.x + grav_forces.x , Ship.engine.y + grav_forces.y, Ship.engine.z + grav_forces.z };
 }
 
 void Solver::Euler(double& time, double& velocity, double& position, double& dt, double& force, double& mass) {
@@ -502,7 +493,6 @@ void Solver::Solve() {
 		distance.Zero();
 		Ship.PotentialEnergy = 0;
 
-
 		if (!Planets.empty()) { 
 			
 			Calculate_Grav();
@@ -512,7 +502,6 @@ void Solver::Solve() {
 			
 			Calculate_Net();
 
-			//combine xyz into one
 			switch (method) {
 			case adams:
 				Adams_Bashford(time, Ship.velocity.x, Ship.position.x, step, Ship.force.x, Ship.mass); //x
