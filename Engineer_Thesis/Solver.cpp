@@ -7,7 +7,7 @@ void Solver::Populate() {
 
 	double i=0;
 	short int Planet_Num=0;
-	Planet planet(0, 0, 0, 0, 0, "");
+	Planet planet; 
 
 	//Get ammount of planets in sim
 	while (std::cout << "Select ammount of planets in simulation: " && !(std::cin >> Planet_Num) || (Planet_Num < 0)) {
@@ -22,20 +22,47 @@ void Solver::Populate() {
 		std::cout << "Enter name of the planet " << i << " : ";
 		std::cin >> planet.name;
 
-		while (std::cout << "Enter mass of the planet " << i << " : " && !(std::cin >> planet.mass) || (planet.mass < 0)) {
+		while (std::cout << "Enter mass in kg of the planet " << i << " : " && !(std::cin >> planet.mass) || (planet.mass < 0)) {
 			std::cin.clear();
 			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 			std::cout << "Invalid input; please re-enter.\n";
 		}
 		
-		while (std::cout << "Enter radius of the planet " << i << " : " && !(std::cin >> planet.radius) || (planet.radius < 0)) {
+		while (std::cout << "Enter radius in m of the planet " << i << " : " && !(std::cin >> planet.radius) || (planet.radius < 0)) {
 			std::cin.clear();
 			std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 			std::cout << "Invalid input; please re-enter.\n";
 		}
 
-		std::cout << "Enter position x,y,z of the planet " << i << " : ";
-		std::cin >> planet.position.x >> planet.position.y >> planet.position.z;
+		std::cout << "Does this planet orbit around a point XYZ? \n 0.No \n 1.Yes ";
+		std::cin >> planet.isOrb;
+
+		if (planet.isOrb) {
+			while (std::cout << "Enter radius in m of the orbit : " && !(std::cin >> planet.orb_radius) || (planet.orb_radius < 0)) {
+				std::cin.clear();
+				std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+				std::cout << "Invalid input; please re-enter.\n";
+			}
+			 
+			while (std::cout << "Enter initial angle on the orbit : " && !(std::cin >> planet.start_ang) || (planet.start_ang < 0) || (planet.start_ang > 6.29)) {
+				std::cin.clear();
+				std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+				std::cout << "Invalid input; please re-enter.\n";
+			}
+
+			while (std::cout << "Enter angular velocity of the orbiting in rad/s: " && !(std::cin >> planet.ang_velocity)) {
+				std::cin.clear();
+				std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+				std::cout << "Invalid input; please re-enter.\n";
+			}
+
+			std::cout << "Enter position x,z in m of the orbit center : ";
+			std::cin >> planet.orb_pos.x >> planet.orb_pos.z;
+		}
+		else {
+			std::cout << "Enter position x,y,z in m of the planet " << i << " : ";
+			std::cin >> planet.position.x >> planet.position.y >> planet.position.z;
+		}
 
 		Planets.push_back(planet);
 		std::cout << "\nPlanet Added: \n";
@@ -174,9 +201,19 @@ void Solver::Save_json() {
 		data["planets"][i]["name"] = p.name;
 		data["planets"][i]["mass"] = p.mass;
 		data["planets"][i]["radius"] = p.radius;
-		data["planets"][i]["position"][0] = p.position.x;
-		data["planets"][i]["position"][1] = p.position.y;
-		data["planets"][i]["position"][2] = p.position.z;
+		data["planets"][i]["hasorbit"] = p.isOrb;
+		if (p.isOrb) {
+			data["planets"][i]["start_angle"] = p.start_ang;
+			data["planets"][i]["orbit_radius"] = p.orb_radius;
+			data["planets"][i]["ang_velocity"] = p.ang_velocity;
+			data["planets"][i]["orbit_pos"][0] = p.orb_pos.x;
+			data["planets"][i]["orbit_pos"][1] = p.orb_pos.z;
+		}
+		else {
+			data["planets"][i]["position"][0] = p.position.x;
+			data["planets"][i]["position"][1] = p.position.y;
+			data["planets"][i]["position"][2] = p.position.z;
+		}
 	}
 	for (auto& step : TimeVect) {
 		auto i = &step - &TimeVect[0];
@@ -272,12 +309,18 @@ void Solver::Load_data(std::string& filename) {
 
 	std::cout << "Planets: \n";
 	for (auto& p : data["planets"]) {
-
 		Planet planet;
 		planet.name = p["name"];
 		planet.mass = p["mass"];
 		planet.radius = p["radius"];
-		planet.position = { p["position"][0], p["position"][1], p["position"][2] };
+		planet.isOrb = p["orbit"];
+		if (planet.isOrb) {
+			planet.start_ang = p["start_angle"];
+			planet.orb_radius = p["orbit_radius"];
+			planet.ang_velocity = p["ang_velocity"];
+			planet.orb_pos = { p["orbit_pos"][0], 0, p["orbit_pos"][1]};
+		}
+		else planet.position = { p["position"][0], p["position"][1], p["position"][2] }; 
 		Planets.push_back(planet);
 		std::cout << "\nPlanet Added:";
 		planet.Print_info();
@@ -336,7 +379,7 @@ bool Solver::Check_Collision(Planet& Planet) {
 	else return false;
 }
 
-bool Solver::UseEngine(double& time) {
+bool Solver::UseEngine() {
 
 	bool used = false;
 	//TODO: Check fuel
@@ -347,7 +390,7 @@ bool Solver::UseEngine(double& time) {
 		
 		//first check if there is fuel:
 		if (Ship.fuel <= 0) {
-			std::cout << "\nRun Out of fuel, engines won't be used from now on..." << std::endl;
+			std::cout << "\nRun Out of fuel at time: " << time << ", engines won't be used from now on..." << std::endl;
 			TimeVect.clear(); //if there is no fuel there is no reason to check engine usage
 			break;
 		}
@@ -385,10 +428,9 @@ void Solver::Calculate_Grav() {
 
 	for (auto& p : Planets) {
 
-		//check if ship collides with the planet
-		if (Check_Collision(p)) {
-			exit(0); //stop simulation
-		}
+		//check if ship collides with the planet and print that information
+		Check_Collision(p);
+
 		//distance between ship and planet
 		r = sqrt(pow(Ship.position.x - p.position.x, 2)
 			+ pow(Ship.position.y - p.position.y, 2)
@@ -411,7 +453,7 @@ void Solver::Calculate_Net() {
 	engine_used = false;
 	//engine is used only if time intervals vector is not empty
 	if (!TimeVect.empty()) {
-		engine_used = UseEngine(time);
+		engine_used = UseEngine();
 	}
 	//remove fuel used 
 	if (engine_used) {
@@ -493,8 +535,10 @@ void Solver::Solve() {
 		distance.Zero();
 		Ship.PotentialEnergy = 0;
 
+		//move planets around orbit
+		Move_Orbit();
+
 		if (!Planets.empty()) { 
-			
 			Calculate_Grav();
 		}	
 			//use forces only if particle has a mass 
@@ -548,6 +592,15 @@ void Solver::Solve() {
 	
 }
 
+void Solver::Move_Orbit() {
+
+	for (auto& p : Planets) {
+		if (p.isOrb) {
+			p.Move_Planet(time);
+		}
+	}
+}
+
 void Solver::Push_Back() {
 
 	time_data.push_back(time);
@@ -559,6 +612,48 @@ void Solver::Push_Back() {
 	force_data.push_back(Ship.force);
 	kinetic_data.push_back(Ship.KineticEnergy);
 	potential_data.push_back(Ship.PotentialEnergy);
+}
+
+void Solver::Save_Planets() {
+
+	std::string ship_name = Ship.name;
+	std::string filename = "./Simulation_History/Planets/";
+	ship_name.append("_Planets.txt");
+	filename.append(ship_name);
+	std::ofstream file;
+	file.open(filename.c_str());
+	file.precision(10);
+
+	//write informational line
+	file << std::fixed << " Name" << " isOrbiting " << " Mass[kg]" << " Radius[m]" << " Position.x[m]" << " Position.y[m]" << " Position.z[m]" << " Orbit Radius[m]" << " Orbit Velocity[m/s]" << " Orbit Initial angle[rad]" << std::endl;
+
+	for (auto& p : Planets) {
+
+		file << p.name << " " << p.isOrb << " " << p.mass << " "
+	       << p.radius << " " << p.position.x << " " 
+			<< p.position.y << " " << p.position.z << " "
+			<< p.orb_radius << " " << p.ang_velocity << " " << p.start_ang
+			<< std::endl;
+	}
+
+	file.close();
+
+	std::string ship_orb = Ship.name;
+	std::string fileorb = "./Simulation_History/Planets/Orbits/";
+	std::string filenameorb;
+
+	for (auto& p : Planets) {
+		if (p.isOrb)
+			filenameorb.append(fileorb + ship_orb + "_" + p.name + ".txt");
+			file.open(filenameorb.c_str());
+			file << std::fixed << " Position.x[m]" << " Position.y[m]" << std::endl;
+			for (auto& v : p.orb_data) {
+				file << v.x << " " << v.z << std::endl;
+			}
+			file.close();
+	}
+
+
 }
 
 void Solver::Save_data() {
@@ -589,6 +684,8 @@ void Solver::Save_data() {
 			<< " " << kinetic_data[step] << " " << potential_data[step] << " " << method << std::endl;
 	}
 	file.close();
+
+	Save_Planets();
 }
 
 

@@ -1,7 +1,7 @@
-from site import makepath
-import matplotlib.pyplot as plt
 import glob 
 import os
+from pickle import TRUE
+import matplotlib.pyplot as plt
 from vpython import *
 from enum import Enum
 
@@ -18,10 +18,11 @@ files = glob.glob(path)
 for f in files:
     filename = os.path.basename(f) 
     filename = filename.replace('.txt','')
-    filename = '"%s"' % filename 
+    filename = '%s' % filename 
     print(filename)
 
 name = input("Enter name of the data file for visualization: ")
+planet_name = name
 
 with open('../Engineer_Thesis/Simulation_History/Ships/%s.txt' % name) as f:
     lines = f.readlines()[1: ]
@@ -46,22 +47,67 @@ with open('../Engineer_Thesis/Simulation_History/Ships/%s.txt' % name) as f:
     meth = [int(line.split()[18]) for line in lines]
 
 
+with open('../Engineer_Thesis/Simulation_History/Planets/%s_Planets.txt' % name) as f:
+    lines = f.readlines()[1: ]
+    names = [line.split()[0] for line in lines]
+    orbits = [int(line.split()[1]) for line in lines]
+    masses = [float(line.split()[2]) for line in lines]
+    radiuses = [float(line.split()[3]) for line in lines]   
+    pposx = [float(line.split()[4]) for line in lines]
+    pposy = [float(line.split()[5]) for line in lines]
+    pposz = [float(line.split()[6]) for line in lines]
+
 #append method to the name
 name += "_" + Method(meth[0]).name
 
-mode = int(input("Choose 1 to Plot Graphs, 0 to Run Simulation: "))
+print('Choose visulization mode: ')
+print('0. Run Simulation only Stationary Planets: ')
+print('1. Run Simulation with Orbitting Planets:')
+mode = int(input("2. Plot Graphs: "))
 
 if mode == 0:
-    i = -1;
-    scale = 10000.0;
-    rad = 50.0;
-    planet=sphere(pos=vector(0,0,0),radius=6371000.0/scale, texture=textures.earth)
+    i = -1
+    scale = 10000.0
+
+    for j in range(len(names)):
+        if names[j].lower() == "earth":
+            earth = sphere(pos=vector(pposx[j],pposy[j],pposz[j]),radius=radiuses[j]/scale, texture=textures.earth)
+        elif names[j].lower() == "moon":
+            moon = sphere(pos=vector(pposx[j],pposy[j],pposz[j]),radius=radiuses[j]/scale, texture='https://vignette.wikia.nocookie.net/future/images/e/e9/Moon_map_mercator.jpg',)
+        else:
+            sphere(pos=vector(pposx[j],pposy[j],pposz[j]),radius=radiuses[j]/scale)
+    rad = 0.03 * radiuses[0]/scale
     ship=sphere(pos=vector(posx[0]/scale + rad,posy[0]/scale + rad,posz[0]/scale + rad), radius=rad, make_trail=True)
     
     for t in time:
         i+=1
         rate(1000)
         ship.pos=vector(posx[i]/scale + rad, posy[i]/scale + rad, posz[i]/scale + rad)
+
+elif mode == 1:
+    i = -1
+    scale = 100000.0
+
+    for j in range(len(names)):
+         if orbits[j] == 1:
+            planet_name += "_%s.txt" % names[j]
+            with open('../Engineer_Thesis/Simulation_History/Planets/Orbits/%s' % planet_name ) as f:
+                lines = f.readlines()[1: ]
+                orbposx = [float(line.split()[0]) for line in lines]
+                orbposz = [float(line.split()[1]) for line in lines]
+            moon = sphere(pos=vector(orbposx[0]/scale,0,orbposz[0]/scale),radius=radiuses[j]/scale, texture='https://vignette.wikia.nocookie.net/future/images/e/e9/Moon_map_mercator.jpg')
+         else:
+            earth = sphere(pos=vector(pposx[j],pposy[j],pposz[j]),radius=radiuses[j]/scale, texture=textures.earth) 
+    
+    rad = 0.03 * radiuses[0]/scale
+    ship=sphere(pos=vector(posx[0]/scale + rad,posy[0]/scale + rad,posz[0]/scale + rad), radius=rad, make_trail=True)
+    
+    for t in time:
+        i+=1
+        rate(1000)
+        ship.pos=vector(posx[i]/scale + rad, posy[i]/scale + rad, posz[i]/scale + rad)
+        moon.pos=vector(orbposx[i]/scale, 0, orbposz[i]/scale)
+         
 
 else:
     #Mass and fuel

@@ -11,7 +11,7 @@ class Control;
 class Solver {
 
 public:
-	const double G = 667259.0 / 10000000000000000.0;
+	const double G = 6.67259e-11;
 	std::vector <double> time_data, mass_data, fuel_data, kinetic_data, potential_data;
 	std::vector <Vector3D> position_data, velocity_data, engine_data, force_data;
 	std::vector <Planet> Planets;
@@ -43,7 +43,7 @@ public:
 	//check if there are collistions
 	bool Check_Collision(Planet& Planet);
 	//function to check intervals and apply engine force
-	bool UseEngine(double& time);
+	bool UseEngine();
 	//Calculate Gravitation forces from planets and Potential Energy of particle
 	void Calculate_Grav();
 	//Calculate Net force
@@ -60,6 +60,10 @@ public:
 	void Solve();
 	//save values to vectors
 	void Push_Back();
+	//move orbiting planets and save to vector 
+	void Move_Orbit();
+	//Save planets to a seprate file
+	void Save_Planets();
 	//Save simulation data to file
 	void Save_data();
 	//check if file is empty 

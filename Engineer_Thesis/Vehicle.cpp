@@ -39,7 +39,7 @@ void Vehicle::Print_info() {
 }
 
 void Vehicle::User_set() {
-	std::cout << "Input name of the particle: ";
+	std::cout << "Input name of the ship: ";
 	std::cin >> name;
 	std::cout << "Input dry mass (ship without fuel) in kg: ";
 	std::cin >> mass;

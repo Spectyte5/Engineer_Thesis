@@ -1,0 +1,55 @@
+{
+  "control": [
+    {
+      "endtime": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "force": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "starttime": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "data": {
+    "ode": 3,
+    "step": 1,
+    "time": 42500
+  },
+  "planets": [
+    {
+      "name": "Earth",
+      "mass": 5.972e24,
+      "radius": 6.378e6,
+      "orbit": false,
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "ship": {
+    "fuel": 0.0,
+    "fuel_usage": 0.0,
+    "mass": 3000.0,
+    "name": "Sim1",
+    "position": [
+      12742000.0,
+      0.0,
+      0.0
+    ],
+    "velocity": [
+      0.0,
+      5592.27,
+      0.0
+    ]
+  }
+}
