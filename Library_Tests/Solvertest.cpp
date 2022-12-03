@@ -79,7 +79,11 @@ public:
 	void Planet_Set(double m, double r, double x, double y, double z, std::string n) {
 
 		//create a planet
-		Planet planet(m, r, x, y, z, n);
+		Planet planet;
+		planet.mass = m;
+		planet.radius = r;
+		planet.position = { x,y,z };
+		planet.name = n;
 
 		//push to the vector
 		solver.Planets.push_back(planet);
