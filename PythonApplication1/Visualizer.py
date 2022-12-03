@@ -67,26 +67,26 @@ mode = int(input("2. Plot Graphs: "))
 
 if mode == 0:
     i = -1
-    scale = 10000.0
+    scalefactor = 10000
 
     for j in range(len(names)):
         if names[j].lower() == "earth":
-            earth = sphere(pos=vector(pposx[j],pposy[j],pposz[j]),radius=radiuses[j]/scale, texture=textures.earth)
+            earth = sphere(pos=vector(pposx[j],pposy[j],pposz[j]),radius=radiuses[j], texture=textures.earth)
         elif names[j].lower() == "moon":
-            moon = sphere(pos=vector(pposx[j],pposy[j],pposz[j]),radius=radiuses[j]/scale, texture='https://vignette.wikia.nocookie.net/future/images/e/e9/Moon_map_mercator.jpg',)
+            moon = sphere(pos=vector(pposx[j],pposy[j],pposz[j]),radius=radiuses[j], texture='https://vignette.wikia.nocookie.net/future/images/e/e9/Moon_map_mercator.jpg',)
         else:
-            sphere(pos=vector(pposx[j],pposy[j],pposz[j]),radius=radiuses[j]/scale)
-    rad = 0.03 * radiuses[0]/scale
-    ship=sphere(pos=vector(posx[0]/scale + rad,posy[0]/scale + rad,posz[0]/scale + rad), radius=rad, make_trail=True)
+            sphere(pos=vector(pposx[j],pposy[j],pposz[j]),radius=radiuses[j])
+    rad = 0.03 * radiuses[0]
+    ship=sphere(pos=vector(posx[0] + rad,posy[0] + rad,posz[0] + rad), radius=rad, make_trail=True)
     
     for t in time:
         i+=1
         rate(1000)
-        ship.pos=vector(posx[i]/scale + rad, posy[i]/scale + rad, posz[i]/scale + rad)
+        ship.pos=vector(posx[i] + rad, posy[i] + rad, posz[i] + rad)
 
 elif mode == 1:
     i = -1
-    scale = 100000.0
+    scalefactor = 100000
 
     for j in range(len(names)):
          if orbits[j] == 1:
@@ -95,18 +95,18 @@ elif mode == 1:
                 lines = f.readlines()[1: ]
                 orbposx = [float(line.split()[0]) for line in lines]
                 orbposz = [float(line.split()[1]) for line in lines]
-            moon = sphere(pos=vector(orbposx[0]/scale,0,orbposz[0]/scale),radius=radiuses[j]/scale, texture='https://vignette.wikia.nocookie.net/future/images/e/e9/Moon_map_mercator.jpg')
+            moon = sphere(pos=vector(orbposx[0],0,orbposz[0]),radius=radiuses[j], texture='https://vignette.wikia.nocookie.net/future/images/e/e9/Moon_map_mercator.jpg')
          else:
-            earth = sphere(pos=vector(pposx[j],pposy[j],pposz[j]),radius=radiuses[j]/scale, texture=textures.earth) 
+            earth = sphere(pos=vector(pposx[j],pposy[j],pposz[j]),radius=radiuses[j], texture=textures.earth) 
     
-    rad = 0.03 * radiuses[0]/scale
-    ship=sphere(pos=vector(posx[0]/scale + rad,posy[0]/scale + rad,posz[0]/scale + rad), radius=rad, make_trail=True)
+    rad = 0.03 * radiuses[0]
+    ship=sphere(pos=vector(posx[0] + rad,posy[0] + rad,posz[0] + rad), radius=rad, make_trail=True)
     
     for t in time:
         i+=1
         rate(1000)
-        ship.pos=vector(posx[i]/scale + rad, posy[i]/scale + rad, posz[i]/scale + rad)
-        moon.pos=vector(orbposx[i]/scale, 0, orbposz[i]/scale)
+        ship.pos=vector(posx[i] + rad, posy[i] + rad, posz[i] + rad)
+        moon.pos=vector(orbposx[i], 0, orbposz[i])
          
 
 else:
