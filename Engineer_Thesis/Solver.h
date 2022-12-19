@@ -8,75 +8,210 @@
 //forward declare class
 class Control;
 
+/// Main class, used for solving
+/// 
+/// Class taking care of loading, validating, saving files and calculating results using different solvers
 class Solver {
 
 public:
+	///Gravitational constant
 	const double G = 6.67259e-11;
-	std::vector <double> time_data, mass_data, fuel_data, kinetic_data, potential_data;
-	std::vector <Vector3D> position_data, velocity_data, engine_data, force_data;
+	/// vectors for storing current time value
+	std::vector <double> time_data;
+	/// vectors for storing current mass 
+	std::vector <double> mass_data;
+	/// vectors for storing current fuel value
+	std::vector <double> fuel_data;
+	/// vectors for storing current kinetic energy value
+	std::vector <double> kinetic_data;
+	/// vectors for storing current potential energy value
+	std::vector <double> potential_data;
+
+	/// vector used for storing current position data
+	std::vector <Vector3D> position_data;
+	/// vector used for storing current velocity data
+	std::vector <Vector3D>velocity_data;
+	/// vector used for storing current engine data
+	std::vector <Vector3D> engine_data;
+	/// vector used for storing current force data
+	std::vector <Vector3D> force_data;
+	/// vector storing planets in the simulation
 	std::vector <Planet> Planets;
+	/// vector storing force intervals of type Control
 	std::vector <Control> TimeVect;
+	/// Ship member used in simulation
 	Vehicle Ship = Vehicle("", 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	/// Gravitational force and distance from Planet at the time T
 	Vector3D grav_forces, distance;
+	/// Boolean used for removing fuel used
 	bool engine_used = false;
+	/// Enum of different solving ODEs methods
 	enum ode { adams, euler, midpoint, runge};
-	int method=0; //which method will be used
+	/// Method stored as an int used for enum
+	int method=0; 
 
-	//T is time of simulation, step is time step and time is current simulation time
-	double T = 0, step = 0, time = 0, fuel_used = 0;
-
-	//derivatives of position and velocity
+	/// time of simulation
+	double T = 0;
+	/// time step between increments
+	double step = 0;
+	/// current simulation time
+	double time = 0;
+	/// ammount of fuel_used at the iteration
+	double fuel_used = 0;
+ 
+	/// Derivative of Velocity
+	/// 
+	/// Function returning the derivative of velocity.
+	/// @param t is current time of simulation
+	/// @param v is velocity at time t
+	/// @param f is force at time t
+	/// @param m is mass of the object
+    /// @returns double discreibing velocity change in the last interval
 	double dvdt(double t, double v, double f, double m) { return f / m; }
+	/// Derivative of Position
+	/// 
+	/// Function returning the derivative of position.
+	/// @param t is current time of simulation
+	/// @param v is velocity at time t
+	/// @param x is position at time t
+	/// @returns double discreibing position change in the last interval
 	double dxdt(double t, double v, double x) { return v; }
-	//define planets in simulation
+	///Define planets in simulation.
+	///
+	///Gets ammount of planets in simulation, sets parameters for planet and puts it in the planets vector 
 	void Populate();
-	//Create all simulation elements
+	///Create all simulation elements
+	///
+	/// Setup Particle and planets in simulation, fill all engine intervals
 	void Setup();
-	//validate json files to a schema
+	/// Json Validation function
+	/// 
+	/// Check if vector file validates against the schema
+	/// @param filename is a filepath for the json file that will be validated
 	bool Validate_Json(std::string& filename);
-	//Save simulation elements as a Json file
+	///Save simulation as a Json file
+	///
+	/// Function used in create a simulation mode to save all parameters of the ship and planets in a json file which then can be reloaded in load mode.
 	void Save_json();
-	//display files in directory and open
+	/// Function for Loading file from a directory
+	/// 
+	/// Display files in directory and open file with a given filepath
+	/// @param sys_path is directory in which we are looking for files
+	/// @param filepath is path to the file
+	/// @param extension is extension of the file ex. "txt"
+	/// @returns loaded file as ifstream
 	std::ifstream Load_file(std::string sys_path, std::string filepath, std::string extenstion);
-	//load data from json format
+	/// Function Setting parameters from the file
+	///
+	/// Loaded file is used to set paramaters
+	/// @see Load_file() for information about loading file
 	void Load_data(std::string& filename);
-	//check if there are collistions
+	/// Collistion checking function
+	/// 
+	/// Function calculating distance between the Ship and Planet.
+	/// @param Planet is a Planet Class object which we are checking ships collistion with
+	/// @returns true if we have a collistion and false if there not
+	/// @attention If Ship is exactly on the Planet's surface it does not count as a collistion
 	bool Check_Collision(Planet& Planet);
-	//function to check intervals and apply engine force
+	/// Applying the thrust force from the engines
+	///
+	/// Checks if we are in any of intervals defined by user and if yes and fuel is available it applies engine force
+	/// @returns true if engine was used and no if not
 	bool UseEngine();
-	//Calculate Gravitation forces from planets and Potential Energy of particle
+	/// Function for calculating gravity
+	///
+	/// Iterate through planets and calculate Gravitation forces acting on the ship and it's potential energy
 	void Calculate_Grav();
-	//Calculate Net force
+	/// Function for Calculating Net force
+	///
+	/// Sets the value of net force taking in to account gravitational and thrust forces
+	/// @see Calculate_Grav() and UseEngine() for more information about forces calculation
 	void Calculate_Net();
-	//Solver use Euler method
+	/// Euler method
+	///
+	/// Function solving and ODE using the Euler's method and setting parameters of the ship
+	/// @param time is current time of simulation
+	/// @param velocity is velocity at current time
+	/// @param position is position at current time 
+	/// @param dt is step between iterations
+	/// @param force is force acting on the spaceship
+	/// @mass is mass of the spaceship
 	void Euler(double& time, double& velocity, double& position, double& dt, double& force, double& mass);
-	//Solver use Runge-Kutta IV-order method
+	/// Runge-Kutta IV method
+    ///
+    /// Function solving and ODE using the Runge-Kutta IV-order method and setting parameters of the ship
+    /// @param time is current time of simulation
+    /// @param velocity is velocity at current time
+    /// @param position is position at current time 
+    /// @param dt is step between iterations
+    /// @param force is force acting on the spaceship
+    /// @mass is mass of the spaceship
 	void Runge_Kutta(double& time, double& velocity, double& position, double& dt, double& force, double& mass);
-	//Solver use Midpoint method
+	/// Midpoint method
+    ///
+    /// Function solving and ODE using the modified Euler's method (Midpoint method) and setting parameters of the ship
+    /// @param time is current time of simulation
+    /// @param velocity is velocity at current time
+    /// @param position is position at current time 
+    /// @param dt is step between iterations
+    /// @param force is force acting on the spaceship
+    /// @mass is mass of the spaceship
 	void Midpoint(double& time, double& velocity, double& position, double& dt, double& force, double& mass);
-	//Solver use Adam's Bashforth
+	/// Adams-Bashforth's method
+    ///
+    /// Function solving and ODE using the Adams-Bashforth's predictor and corrector method for calculating and setting parameters of the ship
+    /// @param time is current time of simulation
+    /// @param velocity is velocity at current time
+    /// @param position is position at current time 
+    /// @param dt is step between iterations
+    /// @param force is force acting on the spaceship
+    /// @mass is mass of the spaceship
 	void Adams_Bashford(double& time, double& velocity, double& position, double& dt, double& force, double& mass);
-	//main solving function
+	/// Main solving function
+	///
+	/// This function loops through time interval calling all functions used for calculation and prints result on screen.
+	/// @see Adams_Bashford(), Midpoint(), Euler(), Runge_Kutta() for more information about solving ODE's
 	void Solve();
-	//save values to vectors
+	/// Put all parameters in vectors
+	/// 
+	/// Save all neccessary values at time t into corresponding vectors
 	void Push_Back();
-	//move orbiting planets and save to vector 
+	/// Method for changing position of orbitting planets
+	///
+	/// Checks if planets is orbitting around a point and if yes changes its position and saves it to vector 
 	void Move_Orbit();
-	//Save planets to a seprate file
+	/// Function for saving planets
+	///
+	/// Save all planets' paramaters to a seprate file
 	void Save_Planets();
-	//Save simulation data to file
+	/// Save simulation data
+	/// 
+	/// Saves all parameters and calls the function for saving planets' data.
+	/// @see Save_Planets() for more information about saving planets
 	void Save_data();
-	//check if file is empty 
+	/// Funtion checking if a given file is empty
+	/// 
+	/// @param pFile is path and name of the file
+	/// @returns true if empty and false if not
 	bool is_empty(std::ifstream& pFile)
 	{
 		return pFile.peek() == std::ifstream::traits_type::eof();
 	}
+	/// Pauses between simulation elements printing.
+	/// 
+	/// Function printing '=' signs to allow better seperation between simulation elements and improve comfort of reading the text displayed. 
 	void Print_Pauses() {
 		std::cout  << std::setfill('=') << std::setw(120) << "\n";
 	}
 };
 
-//class that will hold time intervals when forces are used;
+/// Class for engine intervals used in simulation
+///
+/// This class is used to create engine intervals, print and check input given by user for them.
+/// @param timestart is Vector3D object at what time the engine will be turned on
+/// @param timeend is Vector3D object at what time the engine will be turned off
+/// @param engforce is Vector3D object the direction and magnitude of thrust force vector
+/// @see Vector3D for information about three-dimenstional vectors class
 class Control{
 
 public:
@@ -89,8 +224,11 @@ public:
 			<< "\nEnd times(x,y,z): " << timeend << " s"
 			<< "\nEngine force(x,y,z): " << engforce << " N" << std::endl;
 	}
+	/// Function for checking if intervals given by user are possible to be implemented.
+	///
+	/// Iterates through all intervals given by the user, checks if the engine start, end and thrust values are correct and don't intersect each other.
+	///@returns true if all conditions are satisfied
 	bool Check_input(Solver& method) {
-		//check input:
 			//initial check:
 		if (method.TimeVect.empty()) {
 			//timestart 
@@ -106,7 +244,6 @@ public:
 			//check if interval does not intersect previous interval
 			if (timestart.x < method.TimeVect.back().timeend.x || timestart.y < method.TimeVect.back().timeend.y || timestart.z < method.TimeVect.back().timeend.z) return false;
 		}
-		//if all conditions are satisfied return true
 		return true;
 	}
 };

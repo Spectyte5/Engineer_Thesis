@@ -9,14 +9,12 @@ void Solver::Populate() {
 	short int Planet_Num=0;
 	Planet planet; 
 
-	//Get ammount of planets in sim
 	while (std::cout << "Select ammount of planets in simulation: " && !(std::cin >> Planet_Num) || (Planet_Num < 0)) {
 		std::cin.clear();
 		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		std::cout << "Invalid input; please re-enter.\n";
 	}
 
-	//Set parameters for planets and put in the planets vector
 	for (int i = 0; i < Planet_Num; i++) {
 		
 		std::cout << "Enter name of the planet " << i << " : ";
@@ -72,9 +70,9 @@ void Solver::Populate() {
 
 void Solver::Setup() {
 	Print_Pauses();
-	Ship.User_set(); //setup particle
+	Ship.User_set(); 
 	Print_Pauses();
-	Populate(); //setup planets
+	Populate();
 	Print_Pauses();
 	short int interval_num=0;
 	Control interval;
@@ -106,7 +104,6 @@ void Solver::Setup() {
 		std::cout << "Invalid input; please re-enter.\n";
 	}
 
-	//fill all intervals until input is correct
 	for (int i = 0; i < interval_num ; i++) {
 
 		std::cout << "Interval " << i << ": Enter time of turning on the engines (x y z): " << std::endl;

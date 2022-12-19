@@ -5,7 +5,7 @@
 class SolverTest : public testing::Test {
 public:
 	Solver solver;
-	std::streambuf* old_buffer = std::cout.rdbuf(nullptr); //disable cout during tests
+	std::streambuf* old_buffer = std::cout.rdbuf(nullptr); //disable console during tests
 
 	void SetUp() {
 		solver.T = 10;
@@ -144,7 +144,7 @@ TEST_F(SolverTest, Adams_BashfordWithEngineWithPlanet) {
 	SetUp(1, 465, 0);
 	Set_Stats(0, 1738100.0, 0, 0, 0, 0, 2150, 2350, 5.05376);
 	Engine_Set({ 0,0,0 }, { 0,465,0 }, { 0,15418.6,0 });
-	Planet_Set(73460000000000000000000.0, 1738100.0, 0, 0, 0, "Moon");
+	Planet_Set(7.346e22, 1738100.0, 0, 0, 0, "Moon");
 	solver.Solve();
 	CheckValues({ 0,2030178,0 }, { 0, 292078, 0 }, { 0, 1566, 0 }, { 0, 15418.6, 0 }, { 0, 12852, 0 }, 2150, 0.7);
 }
@@ -176,7 +176,7 @@ TEST_F(SolverTest, EulerWithEngineWithPlanet) {
 	SetUp(1, 465, 1);
 	Set_Stats(0, 1738100.0, 0, 0, 0, 0, 2150, 2350, 5.05376);
 	Engine_Set({ 0,0,0 }, { 0,465,0 }, { 0,15418.6,0 });
-	Planet_Set(73460000000000000000000.0, 1738100.0, 0, 0, 0, "Moon");
+	Planet_Set(7.346e22, 1738100.0, 0, 0, 0, "Moon");
 	solver.Solve();
 	CheckValues({ 0,2031136,0 }, { 0, 293036, 0 }, { 0, 1566, 0 }, { 0, 15418.6, 0 }, { 0, 12854, 0 }, 2150, 1.0);
 }
@@ -208,7 +208,7 @@ TEST_F(SolverTest, MidpointWithEngineWithPlanet) {
 	SetUp(1, 465, 2);
 	Set_Stats(0, 1738100.0, 0, 0, 0, 0, 2150, 2350, 5.05376);
 	Engine_Set({ 0,0,0 }, { 0,465,0 }, { 0,15418.6,0 });
-	Planet_Set(73460000000000000000000.0, 1738100.0, 0, 0, 0, "Moon");
+	Planet_Set(7.346e22, 1738100.0, 0, 0, 0, "Moon");
 	solver.Solve();
 	CheckValues({ 0,2031953,0 }, { 0, 293853, 0 }, { 0, 1566, 0 }, { 0, 15418.6, 0 }, { 0, 12856, 0 }, 2150, 1.0);
 }
@@ -242,7 +242,8 @@ TEST_F(SolverTest, RungeKuttaWithEngineWithPlanet) {
 	SetUp(1, 465, 3);
 	Set_Stats(0, 1738100.0, 0, 0, 0, 0, 2150, 2350, 5.05376);
 	Engine_Set({ 0,0,0 }, { 0,465,0 }, { 0,15418.6,0 });
-	Planet_Set(73460000000000000000000.0, 1738100.0, 0, 0, 0, "Moon");
+	Planet_Set(7.346e22, 1738100.0, 0, 0, 0, "Moon");
 	solver.Solve();
 	CheckValues({ 0,2030320,0 }, { 0, 292220, 0 }, { 0, 1566, 0 }, {0, 15418.6, 0 }, { 0, 12852, 0 }, 2150, 1.0);
 }
+
