@@ -9,7 +9,7 @@ link
 [Instructions](Engineer_Thesis/Instructions.md)
 
 # Simulations
-Here are simulation examples that i was able to create and visualize using vpython library. Simulation plots can be found here: [Plots](Engineer_Thesis/Engineer_Thesis/Plots)
+Here are simulation examples that i was able to create and visualize using vpython library. Simulation plots can be found here: [Plots](Engineer_Thesis/Plots)
 
 ## Sim1 
 Ship with constant velocity on Earth orbit.
