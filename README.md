@@ -3,16 +3,19 @@ The aim of this work was to design, implement in C++ language, prepare documenta
 
 # Instructions
 - All information can be found in the documentation: 
+	Documentation/documentation.pdf
 link 
 - Alternatively you can read the: Instructions.md
-link
+	Engineer_Thesis/Instructions.md
 
 # Simulations
 Here are simulation examples that i was able to create and visualize using python with Vpython and matplot lib libraries
 
 ## Sim1 
 Ship with constant velocity on earth orbit.
+### SIMULATION:
 <img src="Engineer_Thesis/Gifs/Sim1_Runge_Kutta_IV.gif" alt="Simulation GIF"/>
+### PLOTS:
 <img src="Engineer_Thesis/Plots/Sim1_Runge_Kutta_IV.png" alt="Plot"/>
 ## Sim2 
 Start of the ship from Earth to the earth orbit.
