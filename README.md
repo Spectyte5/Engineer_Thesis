@@ -12,12 +12,12 @@ link
 Here are simulation examples that i was able to create and visualize using python with Vpython library. Simulation plots can be found here: [Plots](Engineer_Thesis/Engineer_Thesis/Plots)
 
 ## Sim1 
-Ship with constant velocity on earth orbit.
+Ship with constant velocity on Earth orbit.
 ### gif:
 <img src="Engineer_Thesis/Gifs/Sim1.gif" alt="Simulation GIF1"/>
 
 ## Sim2 
-Start of the ship from Earth to the earth orbit.
+Start of the ship from Earth surface to the Earth orbit.
 ### gif:
 <img src="Engineer_Thesis/Gifs/Sim2.gif" alt="Simulation GIF2"/>
 
