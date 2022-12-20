@@ -1,2 +1,2 @@
- Name isOrbiting  Mass[kg] Radius[m] Position.x[m] Position.y[m] Position.z[m] Orbit Radius[m] Orbit Velocity[m/s]
-Earth 0 5972000000000000327155712.0000000000 6378000.0000000000 0.0000000000 0.0000000000 0.0000000000 0.0000000000 0.0000000000
+ Name isOrbiting  Mass[kg] Radius[m] Position.x[m] Position.y[m] Position.z[m] Orbit Radius[m] Orbit Velocity[m/s] Orbit Initial angle[rad]
+Earth 0 5972000000000000327155712.0000000000 6378000.0000000000 0.0000000000 0.0000000000 0.0000000000 0.0000000000 0.0000000000 0.0000000000
