@@ -3,13 +3,13 @@ The aim of this work was to design, implement in C++ language, prepare documenta
 
 # Instructions
 - All information can be found in the documentation: 
-	Documentation/documentation.pdf
+[Documentation](Documentation/documentation.pdf)
 link 
 - Alternatively you can read the: Instructions.md
-	Engineer_Thesis/Instructions.md
+[Instructions](Engineer_Thesis/Instructions.md)
 
 # Simulations
-Here are simulation examples that i was able to create and visualize using python with Vpython and matplotlib libraries
+Here are simulation examples that i was able to create and visualize using python with Vpython library. Simulation plots can be found here: [Plots](Engineer_Thesis/Engineer_Thesis/Plots)
 
 ## Sim1 
 Ship with constant velocity on earth orbit.
