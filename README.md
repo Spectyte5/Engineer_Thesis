@@ -1,5 +1,5 @@
 # Engineer_Thesis
-The aim of this work was to design, implement in C++ language, prepare documentation and test a library for numerical calculations related to basic spacecraft motion issues. The influence of gravity and vehicle propulsion will be taken into account. The operation was illustrated and tested on examples of typical problems of orbital mechanics, such as transfer between orbits.
+The aim of this work was to design, implement in C++, prepare documentation and test a library for numerical calculations related to basic spacecraft motion issues. The influence of gravity and vehicle propulsion was taken into account and the operation was illustrated and tested on examples of typical problems of orbital mechanics.
 
 # Instructions
 - All information can be found in the documentation: 
@@ -9,7 +9,7 @@ link
 [Instructions](Engineer_Thesis/Instructions.md)
 
 # Simulations
-Here are simulation examples that i was able to create and visualize using python with Vpython library. Simulation plots can be found here: [Plots](Engineer_Thesis/Engineer_Thesis/Plots)
+Here are simulation examples that i was able to create and visualize using vpython library. Simulation plots can be found here: [Plots](Engineer_Thesis/Engineer_Thesis/Plots)
 
 ## Sim1 
 Ship with constant velocity on Earth orbit.
