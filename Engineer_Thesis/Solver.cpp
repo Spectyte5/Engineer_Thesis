@@ -643,7 +643,7 @@ void Solver::Save_Planets() {
 		if (p.isOrb)
 			filenameorb.append(fileorb + ship_orb + "_" + p.name + ".txt");
 			file.open(filenameorb.c_str());
-			file << std::fixed << " Position.x[m]" << " Position.y[m]" << std::endl;
+			file << std::fixed << " Position.x[m]" << " Position.z[m]" << std::endl;
 			for (auto& v : p.orb_data) {
 				file << v.x << " " << v.z << std::endl;
 			}

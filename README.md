@@ -12,7 +12,7 @@ link
 Here are simulation examples that i was able to create and visualize using vpython library. Simulation plots can be found here: [Plots](Engineer_Thesis/Plots)
 
 ## Sim1 
-Ship with constant velocity on Earth orbit.
+Ship moving with constant velocity on Earth orbit.
 ### gif:
 <img src="Engineer_Thesis/Gifs/Sim1.gif" alt="Simulation GIF1"/>
 
@@ -40,4 +40,9 @@ Hohmann's transfer orbit from higher to lower.
 Bi-eliptical transfer from lower to higher orbit. 
 ### gif:
 <img src="Engineer_Thesis/Gifs/Sim6.gif" alt="Simulation GIF6"/>
+
+## Sim7 
+Ship moving with constant velocity on Moon orbit, with moon orbiting around Earth. 
+### gif:
+<img src="Engineer_Thesis/Gifs/Sim7.gif" alt="Simulation GIF7"/>
 
