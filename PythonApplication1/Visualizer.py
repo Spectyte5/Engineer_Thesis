@@ -88,7 +88,6 @@ if mode == 0:
 elif mode == 1:
     i = -1
     scene2 = canvas(width=1280, height=800, center=vector(385000000.0,0,0), background=color.black)
-    #scene2 = canvas(width=1280, height=800, center=vector(0,0,0), background=color.black)
     scalefactor = 100000
 
     for j in range(len(names)):
@@ -110,7 +109,6 @@ elif mode == 1:
         rate(4000)
         ship.pos=vector(posx[i] + rad, posy[i] + rad, posz[i] + rad)
         moon.pos=vector(orbposx[i], 0, orbposz[i])
-        print(t)
 
 else:
     #Mass and fuel

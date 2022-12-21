@@ -27,7 +27,7 @@ Hohmann's transfer orbit from lower to higher.
 <img src="Engineer_Thesis/Gifs/Sim3.gif" alt="Simulation GIF3"/>
 
 ## Sim4
-Moving ship from Earth orbit to Moon orbit
+Ship moving with constant velocity on Moon orbit, with moon orbiting around Earth. 
 ### gif:
 <img src="Engineer_Thesis/Gifs/Sim4.gif" alt="Simulation GIF4"/>
 
@@ -41,8 +41,4 @@ Bi-eliptical transfer from lower to higher orbit.
 ### gif:
 <img src="Engineer_Thesis/Gifs/Sim6.gif" alt="Simulation GIF6"/>
 
-## Sim7 
-Ship moving with constant velocity on Moon orbit, with moon orbiting around Earth. 
-### gif:
-<img src="Engineer_Thesis/Gifs/Sim7.gif" alt="Simulation GIF7"/>
 
