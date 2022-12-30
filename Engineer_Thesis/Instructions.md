@@ -6,7 +6,7 @@
 To use the library you need to:
 1. Clone repository using:
         git clone https://github.com/Spectyte5/Engineer_Thesis
-2. Download and make sure your compiler sees the libraries neccessary:
+2. Make sure your compiler "sees" the libraries neccessary (which are located in the external folder):
 - json for modern C++: https://github.com/tristanpenman/valijson
 - valijson: https://github.com/nlohmann/json
 

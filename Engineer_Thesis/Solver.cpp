@@ -463,54 +463,54 @@ void Solver::Calculate_Net() {
 		Ship.engine.Zero();
 	}
 	//calculate net force
-	Ship.force = { Ship.engine.x + grav_forces.x , Ship.engine.y + grav_forces.y, Ship.engine.z + grav_forces.z };
+	Ship.force = Ship.engine + grav_forces;
 }
 
-void Solver::Euler(double& time, double& velocity, double& position, double& dt, double& force, double& mass) {
+void Solver::Euler(double& velocity, double& position, double force, double mass) {
 	
-	velocity += dt * dvdt(time, velocity, force, mass);
-	position += dt * dxdt(time, velocity, position);
+	velocity += step * dvdt(time, velocity, force, mass);
+	position += step * dxdt(time, velocity, position);
 }
 
-void Solver::Midpoint(double& time, double& velocity, double& position, double& dt, double& force, double& mass) {
+void Solver::Midpoint(double& velocity, double& position, double force, double mass) {
 
 	double mx, mv;
-	mv = dt * dvdt(time, velocity, force, mass);
-	mx = dt * dxdt(time, velocity, position);
-	velocity += dt * dvdt(time + dt / 2., velocity + mv / 2., force, mass);
-	position += dt * dxdt(time + dt / 2., velocity + mv / 2., position + mx / 2.);
+	mv = step * dvdt(time, velocity, force, mass);
+	mx = step * dxdt(time, velocity, position);
+	velocity += step * dvdt(time + step / 2., velocity + mv / 2., force, mass);
+	position += step * dxdt(time + step / 2., velocity + mv / 2., position + mx / 2.);
 }
 
 //runge kutta method
-void Solver::Runge_Kutta(double& time, double& velocity, double& position, double& dt, double& force, double& mass) {
+void Solver::Runge_Kutta(double& velocity, double& position, double force, double mass) {
 
 	double  k1, k2, k3, k4, h1, h2, h3, h4;
 
-	k1 = dt * dvdt(time, velocity, force, mass);
-	h1 = dt * dxdt(time, velocity, position);
-	k2 = dt * dvdt(time + dt / 2., velocity + k1 / 2., force, mass);
-	h2 = dt * dxdt(time + dt / 2., velocity + k1 / 2., position + h1 / 2.);
-	k3 = dt * dvdt(time + dt / 2., velocity + k2 / 2., force, mass);
-	h3 = dt * dxdt(time + dt / 2., velocity + k2 / 2., position + h2 / 2.);
-	k4 = dt * dvdt(time + dt, velocity + k3, force, mass);
-	h4 = dt * dxdt(time + dt, velocity + k3, position + h3);
+	k1 = step * dvdt(time, velocity, force, mass);
+	h1 = step * dxdt(time, velocity, position);
+	k2 = step * dvdt(time + step / 2., velocity + k1 / 2., force, mass);
+	h2 = step * dxdt(time + step / 2., velocity + k1 / 2., position + h1 / 2.);
+	k3 = step * dvdt(time + step / 2., velocity + k2 / 2., force, mass);
+	h3 = step * dxdt(time + step / 2., velocity + k2 / 2., position + h2 / 2.);
+	k4 = step * dvdt(time + step, velocity + k3, force, mass);
+	h4 = step * dxdt(time + step, velocity + k3, position + h3);
 
 	velocity += 1.0 / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4);
 	position += 1.0 / 6.0 * (h1 + 2 * h2 + 2 * h3 + h4);
 }
 
 //Adam - Bashforth method
-void Solver::Adams_Bashford(double& time, double& velocity, double& position, double& dt, double& force, double& mass) {
+void Solver::Adams_Bashford(double& velocity, double& position, double force, double mass) {
 
 	double  k0, k1, k2, k3, h0, h1, h2, h3;
 
 	//Calculate initial steps RK4
-		k1 = dt * dvdt(time, velocity, force, mass);
-		h1 = dt * dxdt(time, velocity, position);
-		k2 = dt * dvdt(time + dt / 2., velocity + k1 / 2., force, mass);
-		h2 = dt * dxdt(time + dt / 2., velocity + k1 / 2., position + h1 / 2.);
-		k3 = dt * dvdt(time + dt / 2., velocity + k2 / 2., force, mass);
-		h3 = dt * dxdt(time + dt / 2., velocity + k2 / 2., position + h2 / 2.);
+		k1 = step * dvdt(time, velocity, force, mass);
+		h1 = step * dxdt(time, velocity, position);
+		k2 = step * dvdt(time + step / 2., velocity + k1 / 2., force, mass);
+		h2 = step * dxdt(time + step / 2., velocity + k1 / 2., position + h1 / 2.);
+		k3 = step * dvdt(time + step / 2., velocity + k2 / 2., force, mass);
+		h3 = step * dxdt(time + step / 2., velocity + k2 / 2., position + h2 / 2.);
 
 	//Predictor
 	    k0 = (23. * k3 - 16. * k2 + 5. * k1) / 12.;
@@ -545,24 +545,24 @@ void Solver::Solve() {
 
 			switch (method) {
 			case adams:
-				Adams_Bashford(time, Ship.velocity.x, Ship.position.x, step, Ship.force.x, Ship.mass); //x
-				Adams_Bashford(time, Ship.velocity.y, Ship.position.y, step, Ship.force.y, Ship.mass); //y
-				Adams_Bashford(time, Ship.velocity.z, Ship.position.z, step, Ship.force.z, Ship.mass); //z
+				Adams_Bashford(Ship.velocity.x, Ship.position.x, Ship.force.x, Ship.mass); //x
+				Adams_Bashford(Ship.velocity.y, Ship.position.y, Ship.force.y, Ship.mass); //y
+				Adams_Bashford(Ship.velocity.z, Ship.position.z, Ship.force.z, Ship.mass); //z
 				break;
 			case euler:
-				Euler(time, Ship.velocity.x, Ship.position.x, step, Ship.force.x, Ship.mass); 
-				Euler(time, Ship.velocity.y, Ship.position.y, step, Ship.force.y, Ship.mass); 
-				Euler(time, Ship.velocity.z, Ship.position.z, step, Ship.force.z, Ship.mass); 
+				Euler(Ship.velocity.x, Ship.position.x, Ship.force.x, Ship.mass); 
+				Euler(Ship.velocity.y, Ship.position.y, Ship.force.y, Ship.mass); 
+				Euler(Ship.velocity.z, Ship.position.z, Ship.force.z, Ship.mass); 
 				break;
 			case midpoint:
-				Midpoint(time, Ship.velocity.x, Ship.position.x, step, Ship.force.x, Ship.mass); 
-				Midpoint(time, Ship.velocity.y, Ship.position.y, step, Ship.force.y, Ship.mass); 
-				Midpoint(time, Ship.velocity.z, Ship.position.z, step, Ship.force.z, Ship.mass); 
+				Midpoint(Ship.velocity.x, Ship.position.x, Ship.force.x, Ship.mass); 
+				Midpoint(Ship.velocity.y, Ship.position.y, Ship.force.y, Ship.mass); 
+				Midpoint(Ship.velocity.z, Ship.position.z, Ship.force.z, Ship.mass); 
 				break;
 			case runge:
-				Runge_Kutta(time, Ship.velocity.x, Ship.position.x, step, Ship.force.x, Ship.mass); 
-				Runge_Kutta(time, Ship.velocity.y, Ship.position.y, step, Ship.force.y, Ship.mass); 
-				Runge_Kutta(time, Ship.velocity.z, Ship.position.z, step, Ship.force.z, Ship.mass); 
+				Runge_Kutta(Ship.velocity.x, Ship.position.x, Ship.force.x, Ship.mass); 
+				Runge_Kutta(Ship.velocity.y, Ship.position.y, Ship.force.y, Ship.mass); 
+				Runge_Kutta(Ship.velocity.z, Ship.position.z, Ship.force.z, Ship.mass); 
 				break;
 			}
 		}
@@ -572,7 +572,7 @@ void Solver::Solve() {
 		}
 
 		//displacement
-		Ship.displacement = { Ship.position.x - initial_pos.x, Ship.position.y - initial_pos.y, Ship.position.z - initial_pos.z };
+		Ship.displacement = Ship.position - initial_pos;
 
 		//kinetic energy 
 		Ship.KineticEnergy = Ship.mass / 2 * (pow(Ship.velocity.x, 2) + pow(Ship.velocity.y, 2) + pow(Ship.velocity.z, 2));

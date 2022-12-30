@@ -48,30 +48,44 @@ Vector3D& Vector3D::Divide(const Vector3D& vect) {
 	return *this;
 }
 
-Vector3D& operator+ (Vector3D& v1, const Vector3D& v2) {
+Vector3D operator+ (const Vector3D& v1, const Vector3D& v2) {
 
-	//return v1 + v2
-	return v1.Add(v2);
+	Vector3D result;
+
+	result = { v1.x + v2.x, v1.y + v2.y, v1.z + v2.z };
+
+	return result;
 }
 
-Vector3D& operator- (Vector3D& v1, const Vector3D& v2) {
+Vector3D operator- (const Vector3D& v1, const Vector3D& v2) {
 
-	return v1.Subtract(v2);
+	Vector3D result;
+
+	result = { v1.x - v2.x, v1.y - v2.y, v1.z - v2.z };
+
+	return result;
 }
 
-Vector3D& operator* (Vector3D& v1, const Vector3D& v2) {
+Vector3D operator* (const Vector3D& v1, const Vector3D& v2) {
 
-	return v1.Multiply(v2);
+	Vector3D result;
+
+	result = { v1.x * v2.x, v1.y * v2.y, v1.z * v2.z };
+
+	return result;
 }
 
-Vector3D& operator/ (Vector3D& v1, const Vector3D& v2) {
+Vector3D operator/ (const Vector3D& v1, const Vector3D& v2) {
 
-	return v1.Divide(v2);
+	Vector3D result;
+
+	result = { v1.x / v2.x, v1.y / v2.y, v1.z / v2.z };
+
+	return result;
 }
 
 Vector3D& Vector3D::operator +=(const Vector3D& vect) {
 
-	//return vect + vect
 	return this->Add(vect);
 }
 
@@ -96,7 +110,7 @@ std::ostream& operator << (std::ostream& output, const Vector3D& vect) {
 	return output;
 }
 
-Vector3D& Vector3D::operator*(const int& i) {
+Vector3D& Vector3D::operator*(const double& i) {
 
 	this->x *= i;
 	this->y *= i;

@@ -1,0 +1,55 @@
+{
+  "control": [
+    {
+      "endtime": [
+        0.0,
+        465.0,
+        0.0
+      ],
+      "force": [
+        0.0,
+        15418.6,
+        0.0
+      ],
+      "starttime": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "data": {
+    "ode": 3,
+    "step": 0.1,
+    "time": 465
+  },
+  "planets": [
+    {
+      "name": "Moon",
+      "mass": 0.07346e24,
+      "radius": 1.7381e6,
+      "orbit": false,
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "ship": {
+    "fuel": 2350,
+    "fuel_usage": 5.05376,
+    "mass": 4500,
+    "name": "Test2",
+    "position": [
+      0.0,
+      1738100.0,
+      0.0
+    ],
+    "velocity": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  }
+}

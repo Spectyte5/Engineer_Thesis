@@ -55,48 +55,46 @@ public:
 	/// @param vect is vector which the vector calling this method is divided by
 	/// @returns Vector3D that is a vector on which method was called divided by vect value
 	Vector3D& Divide(const Vector3D& vect);
-
 	/// Add two vectors with + operator
     ///
     /// ### Example
     /// ~~~~~~~~~~~~~~~~~~~~~~.cpp
-    /// v1 + v2 
+    /// result = v1 + v2 
     /// ~~~~~~~~~~~~~~~~~~~~~~
-	/// @param v1 is vector which we are adding into
-    /// @param v2 is vector being added
-    /// @returns v1 increased by v2 value
-	friend Vector3D& operator+ (Vector3D& v1, const Vector3D& v2);
+	/// @param v1 is first vector being addded
+    /// @param v2 is second vector being added
+    /// @returns vector equal to v1 + v2
+	friend Vector3D operator+ (const Vector3D& v1, const Vector3D& v2);
 	/// Substract two vectors with - operator
-    ///
-    /// ### Example
-    /// ~~~~~~~~~~~~~~~~~~~~~~.cpp
-    /// v1 - v2 
-    /// ~~~~~~~~~~~~~~~~~~~~~~
-    /// @param v1 is vector which we are substracting from
-    /// @param v2 is vector being substracted
-    /// @returns v1 decreased by v2 value
-	friend Vector3D& operator- (Vector3D& v1, const Vector3D& v2);
+	///
+	/// ### Example
+	/// ~~~~~~~~~~~~~~~~~~~~~~.cpp
+	/// result = v1 - v2 
+	/// ~~~~~~~~~~~~~~~~~~~~~~
+	/// @param v1 is first vector being substracted
+	/// @param v2 is second vector being substracted
+	/// @returns vector equal to v1 - v2
+	friend Vector3D operator- (const Vector3D& v1, const Vector3D& v2);
 	/// Multiply two vectors with * operator
-    ///
-    /// ### Example
-    /// ~~~~~~~~~~~~~~~~~~~~~~.cpp
-    /// v1 * v2 
-    /// ~~~~~~~~~~~~~~~~~~~~~~
-    /// @param v1 is vector multiplyied
-    /// @param v2 is vector we are multiplying by
-    /// @returns v1 multiplied by v2 value
-	friend Vector3D& operator* (Vector3D& v1, const Vector3D& v2);
+	///
+	/// ### Example
+	/// ~~~~~~~~~~~~~~~~~~~~~~.cpp
+	/// result = v1 * v2 
+	/// ~~~~~~~~~~~~~~~~~~~~~~
+	/// @param v1 is first vector being multiplyied
+	/// @param v2 is second vector we are multiplying by
+	/// @returns vector equal to v1 * v2
+	friend Vector3D operator* (const Vector3D& v1, const Vector3D& v2);
 	/// Divide two vectors with / operator
-    ///
-    /// ### Example
-    /// ~~~~~~~~~~~~~~~~~~~~~~.cpp
-    /// v1 / v2 
-    /// ~~~~~~~~~~~~~~~~~~~~~~
-    /// @param v1 is vector divided
-    /// @param v2 is vector we are dividing by
-    /// @returns v1 divided by v2 value
-	friend Vector3D& operator/ (Vector3D& v1, const Vector3D& v2);
-
+	///
+	/// ### Example
+	/// ~~~~~~~~~~~~~~~~~~~~~~.cpp
+	/// result = v1 / v2 
+	/// ~~~~~~~~~~~~~~~~~~~~~~
+	/// @param v1 is first vector being devided
+	/// @param v2 is second vector we are deviding by
+	/// @returns vector equal to v1 / v2
+	friend Vector3D operator/ (const Vector3D& v1, const Vector3D& v2);
 	/// Add two vectors with += operator
 	///
 	/// ### Example
@@ -141,7 +139,7 @@ public:
 	/// Multiply vector by scale
 	///
 	/// @param i is integer value by which we want to multiply our vector
-	Vector3D& operator*(const int& i);
+	Vector3D& operator*(const double& i);
 
 	///Sets values of the x,y,z to 0
 	Vector3D& Zero();

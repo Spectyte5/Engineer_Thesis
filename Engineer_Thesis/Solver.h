@@ -130,43 +130,35 @@ public:
 	/// Euler method
 	///
 	/// Function solving and ODE using the Euler's method and setting parameters of the ship
-	/// @param time is current time of simulation
 	/// @param velocity is velocity at current time
 	/// @param position is position at current time 
-	/// @param dt is step between iterations
 	/// @param force is force acting on the spaceship
-	/// @mass is mass of the spaceship
-	void Euler(double& time, double& velocity, double& position, double& dt, double& force, double& mass);
+	/// @param mass is mass of the spaceship
+	void Euler(double& velocity, double& position, double force, double mass);
 	/// Runge-Kutta IV method
     ///
     /// Function solving and ODE using the Runge-Kutta IV-order method and setting parameters of the ship
-    /// @param time is current time of simulation
-    /// @param velocity is velocity at current time
-    /// @param position is position at current time 
-    /// @param dt is step between iterations
-    /// @param force is force acting on the spaceship
-    /// @mass is mass of the spaceship
-	void Runge_Kutta(double& time, double& velocity, double& position, double& dt, double& force, double& mass);
+	/// @param velocity is velocity at current time
+	/// @param position is position at current time 
+	/// @param force is force acting on the spaceship
+	/// @param mass is mass of the spaceship
+	void Runge_Kutta(double& velocity, double& position, double force, double mass);
 	/// Midpoint method
     ///
     /// Function solving and ODE using the modified Euler's method (Midpoint method) and setting parameters of the ship
-    /// @param time is current time of simulation
-    /// @param velocity is velocity at current time
-    /// @param position is position at current time 
-    /// @param dt is step between iterations
-    /// @param force is force acting on the spaceship
-    /// @mass is mass of the spaceship
-	void Midpoint(double& time, double& velocity, double& position, double& dt, double& force, double& mass);
+	/// @param velocity is velocity at current time
+	/// @param position is position at current time 
+	/// @param force is force acting on the spaceship
+	/// @param mass is mass of the spaceship
+	void Midpoint(double& velocity, double& position, double force, double mass);
 	/// Adams-Bashforth's method
     ///
     /// Function solving and ODE using the Adams-Bashforth's predictor and corrector method for calculating and setting parameters of the ship
-    /// @param time is current time of simulation
-    /// @param velocity is velocity at current time
-    /// @param position is position at current time 
-    /// @param dt is step between iterations
-    /// @param force is force acting on the spaceship
-    /// @mass is mass of the spaceship
-	void Adams_Bashford(double& time, double& velocity, double& position, double& dt, double& force, double& mass);
+	/// @param velocity is velocity at current time
+	/// @param position is position at current time 
+	/// @param force is force acting on the spaceship
+	/// @param mass is mass of the spaceship
+	void Adams_Bashford(double& velocity, double& position, double force, double mass);
 	/// Main solving function
 	///
 	/// This function loops through time interval calling all functions used for calculation and prints result on screen.
@@ -189,14 +181,7 @@ public:
 	/// Saves all parameters and calls the function for saving planets' data.
 	/// @see Save_Planets() for more information about saving planets
 	void Save_data();
-	/// Funtion checking if a given file is empty
-	/// 
-	/// @param pFile is path and name of the file
-	/// @returns true if empty and false if not
-	bool is_empty(std::ifstream& pFile)
-	{
-		return pFile.peek() == std::ifstream::traits_type::eof();
-	}
+
 	/// Pauses between simulation elements printing.
 	/// 
 	/// Function printing '=' signs to allow better seperation between simulation elements and improve comfort of reading the text displayed. 
