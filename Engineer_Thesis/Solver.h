@@ -20,6 +20,7 @@ public:
 	int index = 0;
 	double temp_mass;
 	Vector3D temp_force;
+	//int z = 1;
 
 	/// vectors for storing current time value
 	std::vector <double> time_data;
@@ -54,7 +55,7 @@ public:
 	/// Method stored as an int used for enum
 	int method=0; 
 	/// time of simulation
-	double T = 0;
+	double T;
 	/// time step between increments
 	double step = 0;
 	/// current simulation time
@@ -67,13 +68,13 @@ public:
 	/// @param f is force at time t
 	/// @param m is mass of the object
     /// @returns Vector3D discreibing velocity change (acceleration) in the last interval
-	Vector3D dvdt(Vector3D f, double m) { return f/m; }
+	inline Vector3D dvdt(Vector3D f, double m) { return f/m; }
 	/// Derivative of Position
 	/// 
 	/// Function returning the derivative of position.
 	/// @param v is velocity at time t
 	/// @returns Vector3D discreibing position (velocity) change in the last interval
-	Vector3D dxdt(Vector3D v) { return v; }
+	inline Vector3D dxdt(Vector3D v) { return v; }
 	///Define planets in simulation.
 	///
 	///Gets ammount of planets in simulation, sets parameters for planet and puts it in the planets vector 
@@ -82,6 +83,14 @@ public:
 	///
 	/// Setup Particle and planets in simulation, fill all engine intervals
 	void Setup();
+
+
+	void Use_fuel() {
+		fuel_used = Ship.fuel_usage * step; //calculate fuel used
+		Ship.mass -= fuel_used;
+		Ship.fuel -= fuel_used;
+	}
+
 	/// Json Validation function
 	/// 
 	/// Check if vector file validates against the schema
@@ -159,11 +168,11 @@ public:
 	/// @param position is position at current time 
 	/// @param force is force acting on the spaceship
 	/// @param mass is mass of the spaceship
-	void Adams_Bashford(Vector3D& velocity, Vector3D& position, Vector3D& force, double& mass);
+	void Adams_Bashforth(Vector3D& velocity, Vector3D& position, Vector3D& force, double& mass);
 	/// Main solving function
 	///
 	/// This function loops through time interval calling all functions used for calculation and prints result on screen.
-	/// @see Adams_Bashford(), Midpoint(), Euler(), Runge_Kutta() for more information about solving ODE's
+	/// @see Adams_Bashforth(), Midpoint(), Euler(), Runge_Kutta() for more information about solving ODE's
 	void Solve();
 	/// Put all parameters in vectors
 	/// 

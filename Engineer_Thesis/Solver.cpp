@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <json.hpp>
 #include <valijson_nlohmann_bundled.hpp>
+#include <iomanip>
 
 void Solver::Populate() {
 
@@ -379,7 +380,6 @@ bool Solver::Check_Collision(Planet& Planet) {
 bool Solver::UseEngine() {
 
 	bool used = false;
-	//TODO: Check fuel
 
 	for (auto& i : TimeVect) {
 		used = false;
@@ -393,19 +393,19 @@ bool Solver::UseEngine() {
 
 		//check if simulation step is contained in one of the intervals and if first interval is not 0 sec long
 		//x
-		if (time >= i.timestart.x && time <= i.timeend.x && i.timeend.x != 0) {
+		if (time >= i.timestart.x && time < i.timeend.x && i.timeend.x != 0) {
 			Ship.engine.x = i.engforce.x; //if yes turn on the engine
 			used = true;
 		}
 
 		//y
-		if (time >= i.timestart.y && time <= i.timeend.y && i.timeend.y != 0) {
+		if (time >= i.timestart.y && time < i.timeend.y && i.timeend.y != 0) {
 			Ship.engine.y = i.engforce.y;
 			used = true;
 		}
 
 		//z
-		if (time >= i.timestart.z && time <= i.timeend.z && i.timeend.z != 0) {
+		if (time >= i.timestart.z && time < i.timeend.z && i.timeend.z != 0) {
 			Ship.engine.z = i.engforce.z;
 			used = true;
 		}
@@ -449,15 +449,14 @@ void Solver::Calculate_Net() {
 
 	//will engine be used in this iteration 
 	engine_used = false;
+
 	//engine is used only if time intervals vector is not empty
 	if (!TimeVect.empty()) {
 		engine_used = UseEngine();
 	}
 	//remove fuel used 
 	if (engine_used) {
-		fuel_used = Ship.fuel_usage * step; //calculate fuel used
-		Ship.fuel -= fuel_used;
-		Ship.mass -= fuel_used;
+		Use_fuel();
 	}
 	//if engine not used
 	else {
@@ -481,15 +480,14 @@ void Solver::Recalculate_Forces(double time, double& mass, Vector3D position, Ve
 	Vector3D thrust; 
 
 	//Thrust and mass
-
 	if (engine_used) {
-		if (time >= TimeVect[index].timestart.x && time <= TimeVect[index].timeend.x && TimeVect[index].timeend.x != 0) {
+		if (time >= TimeVect[index].timestart.x && time < TimeVect[index].timeend.x && TimeVect[index].timeend.x != 0) {
 			thrust.x = TimeVect[index].engforce.x;
 		}
-		if (time >= TimeVect[index].timestart.y && time <= TimeVect[index].timeend.y && TimeVect[index].timeend.y != 0) {
+		if (time >= TimeVect[index].timestart.y && time < TimeVect[index].timeend.y && TimeVect[index].timeend.y != 0) {
 			thrust.y = TimeVect[index].engforce.y;
 		}
-		if (time >= TimeVect[index].timestart.z && time <= TimeVect[index].timeend.z && TimeVect[index].timeend.z != 0) {
+		if (time >= TimeVect[index].timestart.z && time < TimeVect[index].timeend.z && TimeVect[index].timeend.z != 0) {
 			thrust.z = TimeVect[index].engforce.z;
 		}
 		double RkIVstep = time - this->time;
@@ -524,6 +522,7 @@ void Solver::Euler(Vector3D& velocity, Vector3D& position, Vector3D force, doubl
 	
 	velocity += dvdt(force, mass) * step;
 	position += dxdt(velocity) * step;
+	//std::cout << std::setprecision(15) << std::fixed << "Step: " << z++ << " F/m: " << dvdt(force,mass) << std::endl;
 }
 
 void Solver::Midpoint(Vector3D& velocity, Vector3D& position, Vector3D force, double mass) {
@@ -571,11 +570,10 @@ void Solver::Runge_Kutta(Vector3D& velocity, Vector3D& position, Vector3D& force
 	//result
 	velocity += (k1 + k2 * 2 + k3 * 2 + k4)/ 6.0;
 	position += (h1 + h2 * 2 + h3 * 2 + h4)/ 6.0;
-
 }
 
 //Adam - Bashforth method
-void Solver::Adams_Bashford(Vector3D& velocity, Vector3D& position, Vector3D& force, double& mass) {
+void Solver::Adams_Bashforth(Vector3D& velocity, Vector3D& position, Vector3D& force, double& mass) {
 
 
 	if (position_data.size() < 3) {
@@ -583,7 +581,7 @@ void Solver::Adams_Bashford(Vector3D& velocity, Vector3D& position, Vector3D& fo
 	}
 
 	else {
-		Vector3D  k0, k1, k2, k3, h0, h1, h2, h3;
+		Vector3D  k0, k1, k2, k3, h0, h1, h2, h3, k4, h4;
 
 		//t - 2dt
 		k1 = dvdt(force_data.end()[-1], mass_data.end()[-1]) * step;
@@ -614,9 +612,11 @@ void Solver::Solve() {
 
 	//save initial position
 	Vector3D initial_pos = Ship.position;
+	double n = T / step;
+	int stop = 0;
 
 	for (time = 0; time < T; time += step) {
-
+		if (stop++ >= n) break; //check ammount of steps
 		grav_forces.Zero();
 		distance.Zero();
 		Ship.PotentialEnergy = 0;
@@ -629,12 +629,11 @@ void Solver::Solve() {
 
 			//use forces only if particle has a mass 
 		if (Ship.mass > 0) {
-			
 			Calculate_Net();
 
 			switch (method) {
 			case adams:
-				Adams_Bashford(Ship.velocity, Ship.position, Ship.force, Ship.mass);
+				Adams_Bashforth(Ship.velocity, Ship.position, Ship.force, Ship.mass);
 				break;
 			case euler:
 				Euler(Ship.velocity, Ship.position, Ship.force, Ship.mass); 
@@ -668,6 +667,13 @@ void Solver::Solve() {
 	std::cout << "Result: \n" << "\nTime of motion: " << T << " seconds" << std::endl;
 	Ship.Print_info();
 	Print_Pauses();
+	
+	Vector3D errorv, errorx, numv, numx;
+	numx = { 63.568516, 381.411099, -120.780181 };
+	numv = { 2.564665, 15.387988, -4.872863 };
+	errorv = Ship.velocity - numv;
+	errorx = Ship.position - numx;
+	std::cout << "Errorv: " << errorv << "\n Errorx: " << errorx << std::endl;
 	
 }
 
