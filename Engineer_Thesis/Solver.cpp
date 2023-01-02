@@ -382,7 +382,6 @@ bool Solver::UseEngine() {
 	//TODO: Check fuel
 
 	for (auto& i : TimeVect) {
-
 		used = false;
 		
 		//first check if there is fuel:
@@ -413,6 +412,8 @@ bool Solver::UseEngine() {
 
 		//because current time can only be in one interval we do not need to check all of them
 		if (used) {
+			//set current
+			index = &i - &TimeVect[0];
 			return true;
 		}
 	}
@@ -466,60 +467,148 @@ void Solver::Calculate_Net() {
 	Ship.force = Ship.engine + grav_forces;
 }
 
-void Solver::Euler(double& velocity, double& position, double force, double mass) {
-	
-	velocity += step * dvdt(time, velocity, force, mass);
-	position += step * dxdt(time, velocity, position);
+void Solver::Reset_Param() {
+	//reset paramaters changed
+	grav_forces.Zero();
+	distance.Zero();
+	Ship.mass = temp_mass;
+	Ship.force = temp_force;
+	if (!Planets.empty()) Move_Orbit(false);
 }
 
-void Solver::Midpoint(double& velocity, double& position, double force, double mass) {
+void Solver::Recalculate_Forces(double time, double& mass, Vector3D position, Vector3D& force) {
 
-	double mx, mv;
-	mv = step * dvdt(time, velocity, force, mass);
-	mx = step * dxdt(time, velocity, position);
-	velocity += step * dvdt(time + step / 2., velocity + mv / 2., force, mass);
-	position += step * dxdt(time + step / 2., velocity + mv / 2., position + mx / 2.);
+	Vector3D thrust; 
+
+	//Thrust and mass
+
+	if (engine_used) {
+		if (time >= TimeVect[index].timestart.x && time <= TimeVect[index].timeend.x && TimeVect[index].timeend.x != 0) {
+			thrust.x = TimeVect[index].engforce.x;
+		}
+		if (time >= TimeVect[index].timestart.y && time <= TimeVect[index].timeend.y && TimeVect[index].timeend.y != 0) {
+			thrust.y = TimeVect[index].engforce.y;
+		}
+		if (time >= TimeVect[index].timestart.z && time <= TimeVect[index].timeend.z && TimeVect[index].timeend.z != 0) {
+			thrust.z = TimeVect[index].engforce.z;
+		}
+		double RkIVstep = time - this->time;
+		mass -= Ship.fuel_usage* RkIVstep;
+	}
+	else thrust.Zero();
+
+	//Grav
+	if (!Planets.empty()) {
+		for (auto& p : Planets) {
+
+			if (p.isOrb) {
+				p.Move_Planet(false, time);
+			}
+			double r = sqrt(pow(position.x - p.position.x, 2)
+				+ pow(position.y - p.position.y, 2)
+				+ pow(position.z - p.position.z, 2));
+			distance = { position.x - p.position.x, position.y - p.position.y, position.z - p.position.z };
+
+			grav_forces.x -= (G * p.mass * mass * distance.x) / pow(r, 3);
+			grav_forces.y -= (G * p.mass * mass * distance.y) / pow(r, 3);
+			grav_forces.z -= (G * p.mass * mass * distance.z) / pow(r, 3);
+		}
+	}
+	else grav_forces.Zero();
+
+	//Net
+	force = thrust + grav_forces;
+}
+
+void Solver::Euler(Vector3D& velocity, Vector3D& position, Vector3D force, double mass) {
+	
+	velocity += dvdt(force, mass) * step;
+	position += dxdt(velocity) * step;
+}
+
+void Solver::Midpoint(Vector3D& velocity, Vector3D& position, Vector3D force, double mass) {
+
+	Vector3D k1;
+	k1 = dvdt(force, mass) * step;
+	position += dxdt((velocity + velocity + k1) / 2.) * step;
+	velocity += k1;
 }
 
 //runge kutta method
-void Solver::Runge_Kutta(double& velocity, double& position, double force, double mass) {
+void Solver::Runge_Kutta(Vector3D& velocity, Vector3D& position, Vector3D& force, double& mass) {
 
-	double  k1, k2, k3, k4, h1, h2, h3, h4;
+	Vector3D  k1, k2, k3, k4, h1, h2, h3, h4;
 
-	k1 = step * dvdt(time, velocity, force, mass);
-	h1 = step * dxdt(time, velocity, position);
-	k2 = step * dvdt(time + step / 2., velocity + k1 / 2., force, mass);
-	h2 = step * dxdt(time + step / 2., velocity + k1 / 2., position + h1 / 2.);
-	k3 = step * dvdt(time + step / 2., velocity + k2 / 2., force, mass);
-	h3 = step * dxdt(time + step / 2., velocity + k2 / 2., position + h2 / 2.);
-	k4 = step * dvdt(time + step, velocity + k3, force, mass);
-	h4 = step * dxdt(time + step, velocity + k3, position + h3);
+	//save values
+	temp_mass = mass;
+	temp_force = force;
 
-	velocity += 1.0 / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4);
-	position += 1.0 / 6.0 * (h1 + 2 * h2 + 2 * h3 + h4);
+	//t
+	k1 = dvdt(force, mass) * step;
+	h1 = dxdt(velocity) * step;
+	Reset_Param();
+
+	//t + dt/2
+	Recalculate_Forces(time + step / 2., mass, position + h1 / 2., force);
+	k2 = dvdt(force, mass) * step;
+	h2 = dxdt(velocity + k1 / 2.) * step;
+	Reset_Param();
+
+	Recalculate_Forces(time + step / 2., mass, position + h2 / 2., force);
+	k3 = dvdt(force, mass) * step;
+	h3 = dxdt(velocity + k2 / 2.) * step;
+	//Reset changed values 
+	Reset_Param();
+
+	//t + dt
+	Recalculate_Forces(time + step, mass, position + h3, force);
+	k4 = dvdt(force, mass) * step;
+	h4 = dxdt(velocity + k3) * step;
+
+	//Reset changed values 
+	Reset_Param();
+
+	//result
+	velocity += (k1 + k2 * 2 + k3 * 2 + k4)/ 6.0;
+	position += (h1 + h2 * 2 + h3 * 2 + h4)/ 6.0;
+
 }
 
 //Adam - Bashforth method
-void Solver::Adams_Bashford(double& velocity, double& position, double force, double mass) {
+void Solver::Adams_Bashford(Vector3D& velocity, Vector3D& position, Vector3D& force, double& mass) {
 
-	double  k0, k1, k2, k3, h0, h1, h2, h3;
 
-	//Calculate initial steps RK4
-		k1 = step * dvdt(time, velocity, force, mass);
-		h1 = step * dxdt(time, velocity, position);
-		k2 = step * dvdt(time + step / 2., velocity + k1 / 2., force, mass);
-		h2 = step * dxdt(time + step / 2., velocity + k1 / 2., position + h1 / 2.);
-		k3 = step * dvdt(time + step / 2., velocity + k2 / 2., force, mass);
-		h3 = step * dxdt(time + step / 2., velocity + k2 / 2., position + h2 / 2.);
+	if (position_data.size() < 3) {
+		Runge_Kutta(Ship.velocity, Ship.position, Ship.force, Ship.mass);
+	}
 
-	//Predictor
-	    k0 = (23. * k3 - 16. * k2 + 5. * k1) / 12.;
-		h0 = (23. * h3 - 16. * h2 + 5. * h1) / 12.;
+	else {
+		Vector3D  k0, k1, k2, k3, h0, h1, h2, h3;
 
-	//Corrector
-		velocity += (5. * k0 + 8. * k3 - k2) / 12.;
-		position += (5. * h0 + 8. * h3 - h2) / 12.;
+		//t - 2dt
+		k1 = dvdt(force_data.end()[-1], mass_data.end()[-1]) * step;
+		h1 = dxdt(velocity_data.end()[-1]) * step;
+
+		//t - dt
+		k2 = dvdt(force_data.back(), mass_data.back()) * step;
+		h2 = dxdt(velocity_data.back()) * step;
+
+		//t 
+		k3 = dvdt(force, mass) * step;
+		h3 = dxdt(velocity) * step;
+
+		//Predictor
+		k0 = (k3 * 23. - k2 * 16. + k1 * 5.) / 12.;
+		h0 = (h3 * 23. - h2 * 16. + h1 * 5.) / 12.;
+
+		//Corrector
+		velocity += (k0 * 5. + k3 * 8. - k2) / 12.;
+		position += (h0 * 5. + h3 * 8. - h2) / 12.;
+	}
 }
+
+
+
 
 void Solver::Solve() {
 
@@ -532,12 +621,12 @@ void Solver::Solve() {
 		distance.Zero();
 		Ship.PotentialEnergy = 0;
 
-		//move planets around orbit
-		Move_Orbit();
-
 		if (!Planets.empty()) { 
+			//move planets around orbit
+			Move_Orbit(true);
 			Calculate_Grav();
-		}	
+		}
+
 			//use forces only if particle has a mass 
 		if (Ship.mass > 0) {
 			
@@ -545,24 +634,17 @@ void Solver::Solve() {
 
 			switch (method) {
 			case adams:
-				Adams_Bashford(Ship.velocity.x, Ship.position.x, Ship.force.x, Ship.mass); //x
-				Adams_Bashford(Ship.velocity.y, Ship.position.y, Ship.force.y, Ship.mass); //y
-				Adams_Bashford(Ship.velocity.z, Ship.position.z, Ship.force.z, Ship.mass); //z
+				Adams_Bashford(Ship.velocity, Ship.position, Ship.force, Ship.mass);
 				break;
 			case euler:
-				Euler(Ship.velocity.x, Ship.position.x, Ship.force.x, Ship.mass); 
-				Euler(Ship.velocity.y, Ship.position.y, Ship.force.y, Ship.mass); 
-				Euler(Ship.velocity.z, Ship.position.z, Ship.force.z, Ship.mass); 
+				Euler(Ship.velocity, Ship.position, Ship.force, Ship.mass); 
+
 				break;
 			case midpoint:
-				Midpoint(Ship.velocity.x, Ship.position.x, Ship.force.x, Ship.mass); 
-				Midpoint(Ship.velocity.y, Ship.position.y, Ship.force.y, Ship.mass); 
-				Midpoint(Ship.velocity.z, Ship.position.z, Ship.force.z, Ship.mass); 
+				Midpoint(Ship.velocity, Ship.position, Ship.force, Ship.mass);
 				break;
 			case runge:
-				Runge_Kutta(Ship.velocity.x, Ship.position.x, Ship.force.x, Ship.mass); 
-				Runge_Kutta(Ship.velocity.y, Ship.position.y, Ship.force.y, Ship.mass); 
-				Runge_Kutta(Ship.velocity.z, Ship.position.z, Ship.force.z, Ship.mass); 
+				Runge_Kutta(Ship.velocity, Ship.position, Ship.force, Ship.mass);
 				break;
 			}
 		}
@@ -589,11 +671,11 @@ void Solver::Solve() {
 	
 }
 
-void Solver::Move_Orbit() {
+void Solver::Move_Orbit(bool save) {
 
 	for (auto& p : Planets) {
 		if (p.isOrb) {
-			p.Move_Planet(time);
+			p.Move_Planet(save, time);
 		}
 	}
 }

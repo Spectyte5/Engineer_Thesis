@@ -16,6 +16,11 @@ class Solver {
 public:
 	///Gravitational constant
 	const double G = 6.67259e-11;
+
+	int index = 0;
+	double temp_mass;
+	Vector3D temp_force;
+
 	/// vectors for storing current time value
 	std::vector <double> time_data;
 	/// vectors for storing current mass 
@@ -26,7 +31,6 @@ public:
 	std::vector <double> kinetic_data;
 	/// vectors for storing current potential energy value
 	std::vector <double> potential_data;
-
 	/// vector used for storing current position data
 	std::vector <Vector3D> position_data;
 	/// vector used for storing current velocity data
@@ -49,7 +53,6 @@ public:
 	enum ode { adams, euler, midpoint, runge};
 	/// Method stored as an int used for enum
 	int method=0; 
-
 	/// time of simulation
 	double T = 0;
 	/// time step between increments
@@ -58,24 +61,19 @@ public:
 	double time = 0;
 	/// ammount of fuel_used at the iteration
 	double fuel_used = 0;
- 
 	/// Derivative of Velocity
 	/// 
 	/// Function returning the derivative of velocity.
-	/// @param t is current time of simulation
-	/// @param v is velocity at time t
 	/// @param f is force at time t
 	/// @param m is mass of the object
-    /// @returns double discreibing velocity change in the last interval
-	double dvdt(double t, double v, double f, double m) { return f / m; }
+    /// @returns Vector3D discreibing velocity change (acceleration) in the last interval
+	Vector3D dvdt(Vector3D f, double m) { return f/m; }
 	/// Derivative of Position
 	/// 
 	/// Function returning the derivative of position.
-	/// @param t is current time of simulation
 	/// @param v is velocity at time t
-	/// @param x is position at time t
-	/// @returns double discreibing position change in the last interval
-	double dxdt(double t, double v, double x) { return v; }
+	/// @returns Vector3D discreibing position (velocity) change in the last interval
+	Vector3D dxdt(Vector3D v) { return v; }
 	///Define planets in simulation.
 	///
 	///Gets ammount of planets in simulation, sets parameters for planet and puts it in the planets vector 
@@ -127,6 +125,9 @@ public:
 	/// Sets the value of net force taking in to account gravitational and thrust forces
 	/// @see Calculate_Grav() and UseEngine() for more information about forces calculation
 	void Calculate_Net();
+
+	void Reset_Param();
+	void Recalculate_Forces(double time, double& mass, Vector3D position, Vector3D& force);
 	/// Euler method
 	///
 	/// Function solving and ODE using the Euler's method and setting parameters of the ship
@@ -134,7 +135,7 @@ public:
 	/// @param position is position at current time 
 	/// @param force is force acting on the spaceship
 	/// @param mass is mass of the spaceship
-	void Euler(double& velocity, double& position, double force, double mass);
+	void Euler(Vector3D& velocity, Vector3D& position, Vector3D force, double mass);
 	/// Runge-Kutta IV method
     ///
     /// Function solving and ODE using the Runge-Kutta IV-order method and setting parameters of the ship
@@ -142,7 +143,7 @@ public:
 	/// @param position is position at current time 
 	/// @param force is force acting on the spaceship
 	/// @param mass is mass of the spaceship
-	void Runge_Kutta(double& velocity, double& position, double force, double mass);
+	void Runge_Kutta(Vector3D& velocity, Vector3D& position, Vector3D& force, double& mass);
 	/// Midpoint method
     ///
     /// Function solving and ODE using the modified Euler's method (Midpoint method) and setting parameters of the ship
@@ -150,7 +151,7 @@ public:
 	/// @param position is position at current time 
 	/// @param force is force acting on the spaceship
 	/// @param mass is mass of the spaceship
-	void Midpoint(double& velocity, double& position, double force, double mass);
+	void Midpoint(Vector3D& velocity, Vector3D& position, Vector3D force, double mass);
 	/// Adams-Bashforth's method
     ///
     /// Function solving and ODE using the Adams-Bashforth's predictor and corrector method for calculating and setting parameters of the ship
@@ -158,7 +159,7 @@ public:
 	/// @param position is position at current time 
 	/// @param force is force acting on the spaceship
 	/// @param mass is mass of the spaceship
-	void Adams_Bashford(double& velocity, double& position, double force, double mass);
+	void Adams_Bashford(Vector3D& velocity, Vector3D& position, Vector3D& force, double& mass);
 	/// Main solving function
 	///
 	/// This function loops through time interval calling all functions used for calculation and prints result on screen.
@@ -171,7 +172,7 @@ public:
 	/// Method for changing position of orbitting planets
 	///
 	/// Checks if planets is orbitting around a point and if yes changes its position and saves it to vector 
-	void Move_Orbit();
+	void Move_Orbit(bool save);
 	/// Function for saving planets
 	///
 	/// Save all planets' paramaters to a seprate file

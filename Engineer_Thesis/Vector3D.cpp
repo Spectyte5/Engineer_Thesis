@@ -110,13 +110,26 @@ std::ostream& operator << (std::ostream& output, const Vector3D& vect) {
 	return output;
 }
 
-Vector3D& Vector3D::operator*(const double& i) {
+Vector3D Vector3D::operator*(const double& d) {
 
-	this->x *= i;
-	this->y *= i;
-	this->z *= i;
+	Vector3D result;
 
-	return *this;
+	result.x = this->x * d;
+	result.y = this->y * d;
+	result.z = this->z * d;
+
+	return result;
+}
+
+Vector3D Vector3D::operator/(const double& d) {
+
+	Vector3D result;
+
+	result.x = this->x / d;
+	result.y = this->y / d;
+	result.z = this->z / d;
+
+	return result;
 }
 
 Vector3D& Vector3D::Zero() {

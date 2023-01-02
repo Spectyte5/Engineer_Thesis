@@ -49,10 +49,13 @@ public:
 	/// 
 	/// Function moving planet around orbit with given angular velocity starting from given angle
 	/// @param time is current time of simulation
-	void Move_Planet(double time) {
+	void Move_Planet(bool save, double time) {
 
 		position.x = orb_pos.x + orb_radius * cos(start_ang + ang_velocity * time);
 	    position.z = orb_pos.z + orb_radius * sin(start_ang + ang_velocity * time);
-		orb_data.push_back(position);
+
+		if (save) {
+			orb_data.push_back(position);
+		}
 	}
 };
