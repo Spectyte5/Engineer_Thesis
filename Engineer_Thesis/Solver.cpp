@@ -2,7 +2,6 @@
 #include <filesystem>
 #include <json.hpp>
 #include <valijson_nlohmann_bundled.hpp>
-#include <iomanip>
 
 void Solver::Populate() {
 
@@ -78,7 +77,7 @@ void Solver::Setup() {
 	short int interval_num=0;
 	Control interval;
 
-	while (std::cout << "Input a time of motion: " && !(std::cin >> T) || (T < 0)) {
+	while (std::cout << "Input a number of steps: " && !(std::cin >> n_steps) || (n_steps < 0)) {
 		std::cin.clear();
 		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		std::cout << "Invalid input; please re-enter.\n";
@@ -88,6 +87,9 @@ void Solver::Setup() {
 		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		std::cout << "Invalid input; please re-enter.\n";
 	}
+
+	//Time of simulation
+	T = n_steps * step;
 
 	while (std::cout << "Which Method should be used for solving ODE: \n 0.Adam's Bashforth \n 1.Euler \n 2.Midpoint \n 3.Runge Kutta IV: " && !(std::cin >> method) || (method < 0 || method > 3)) {
 		std::cin.clear();
@@ -226,7 +228,7 @@ void Solver::Save_json() {
 		data["control"][i]["force"][2] = step.engforce.z;
 	}
 
-	data["data"]["time"] = T;
+	data["data"]["n"] = n_steps;
 	data["data"]["step"] = step;
 	data["data"]["ode"] = method;
 
@@ -342,12 +344,28 @@ void Solver::Load_data(std::string& filename) {
 	}
 	Print_Pauses();
 
-	T = data["data"]["time"];
+	n_steps = data["data"]["n"];
 	step = data["data"]["step"];
 	method = data["data"]["ode"];
+	T = n_steps * step;
+
 	std::cout << "Times:\n\nTime loaded: " << T << std::endl;
 	std::cout << "Step loaded: " << step << std::endl;
-
+	std::cout << "Method loaded: ";
+	switch (method) {
+	case adams:
+		std::cout << "Adams_Bashforth " << std::endl;
+		break;
+	case euler:
+		std::cout << "Euler " << std::endl;
+		break;
+	case midpoint:
+		std::cout << "Midpoint" << std::endl;
+		break;
+	case runge:
+		std::cout << "Runge_Kutta IV" << std::endl;
+		break;
+	}
 	file.close();
 	Print_Pauses();
 }
@@ -454,12 +472,8 @@ void Solver::Calculate_Net() {
 	if (!TimeVect.empty()) {
 		engine_used = UseEngine();
 	}
-	//remove fuel used 
-	if (engine_used) {
-		Use_fuel();
-	}
 	//if engine not used
-	else {
+	if (!engine_used) {
 		Ship.engine.Zero();
 	}
 	//calculate net force
@@ -480,18 +494,18 @@ void Solver::Recalculate_Forces(double time, double& mass, Vector3D position, Ve
 	Vector3D thrust; 
 
 	//Thrust and mass
-	if (engine_used) {
-		if (time >= TimeVect[index].timestart.x && time < TimeVect[index].timeend.x && TimeVect[index].timeend.x != 0) {
+	if (engine_used) {//TODO?
+		if (time >= TimeVect[index].timestart.x && time <= TimeVect[index].timeend.x && TimeVect[index].timeend.x != 0) {
 			thrust.x = TimeVect[index].engforce.x;
 		}
-		if (time >= TimeVect[index].timestart.y && time < TimeVect[index].timeend.y && TimeVect[index].timeend.y != 0) {
+		if (time >= TimeVect[index].timestart.y && time <= TimeVect[index].timeend.y && TimeVect[index].timeend.y != 0) {
 			thrust.y = TimeVect[index].engforce.y;
 		}
-		if (time >= TimeVect[index].timestart.z && time < TimeVect[index].timeend.z && TimeVect[index].timeend.z != 0) {
+		if (time >= TimeVect[index].timestart.z && time <= TimeVect[index].timeend.z && TimeVect[index].timeend.z != 0) {
 			thrust.z = TimeVect[index].engforce.z;
 		}
 		double RkIVstep = time - this->time;
-		mass -= Ship.fuel_usage* RkIVstep;
+		mass -= Ship.fuel_usage * RkIVstep;
 	}
 	else thrust.Zero();
 
@@ -522,14 +536,14 @@ void Solver::Euler(Vector3D& velocity, Vector3D& position, Vector3D force, doubl
 	
 	velocity += dvdt(force, mass) * step;
 	position += dxdt(velocity) * step;
-	//std::cout << std::setprecision(15) << std::fixed << "Step: " << z++ << " F/m: " << dvdt(force,mass) << std::endl;
+
 }
 
 void Solver::Midpoint(Vector3D& velocity, Vector3D& position, Vector3D force, double mass) {
 
 	Vector3D k1;
 	k1 = dvdt(force, mass) * step;
-	position += dxdt((velocity + velocity + k1) / 2.) * step;
+	position += dxdt((velocity + (velocity + k1)) / 2.) * step;
 	velocity += k1;
 }
 
@@ -538,13 +552,14 @@ void Solver::Runge_Kutta(Vector3D& velocity, Vector3D& position, Vector3D& force
 
 	Vector3D  k1, k2, k3, k4, h1, h2, h3, h4;
 
-	//save values
+	//save inital values
 	temp_mass = mass;
 	temp_force = force;
 
 	//t
 	k1 = dvdt(force, mass) * step;
 	h1 = dxdt(velocity) * step;
+	//Reset changed values 
 	Reset_Param();
 
 	//t + dt/2
@@ -556,78 +571,61 @@ void Solver::Runge_Kutta(Vector3D& velocity, Vector3D& position, Vector3D& force
 	Recalculate_Forces(time + step / 2., mass, position + h2 / 2., force);
 	k3 = dvdt(force, mass) * step;
 	h3 = dxdt(velocity + k2 / 2.) * step;
-	//Reset changed values 
 	Reset_Param();
 
 	//t + dt
 	Recalculate_Forces(time + step, mass, position + h3, force);
 	k4 = dvdt(force, mass) * step;
 	h4 = dxdt(velocity + k3) * step;
-
-	//Reset changed values 
 	Reset_Param();
 
 	//result
-	velocity += (k1 + k2 * 2 + k3 * 2 + k4)/ 6.0;
-	position += (h1 + h2 * 2 + h3 * 2 + h4)/ 6.0;
+	velocity += (k1 + k2 * 2. + k3 * 2. + k4)/ 6.;
+	position += (h1 + h2 * 2. + h3 * 2. + h4)/ 6.;
 }
 
 //Adam - Bashforth method
 void Solver::Adams_Bashforth(Vector3D& velocity, Vector3D& position, Vector3D& force, double& mass) {
 
+	//calculate current acceleration and velocity
+	a = dvdt(force, mass);
+	v = dxdt(velocity);
 
-	if (position_data.size() < 3) {
+	//initial steps from RKIV
+	if (time < 2 * step) {
 		Runge_Kutta(Ship.velocity, Ship.position, Ship.force, Ship.mass);
 	}
 
 	else {
-		Vector3D  k0, k1, k2, k3, h0, h1, h2, h3, k4, h4;
-
-		//t - 2dt
-		k1 = dvdt(force_data.end()[-1], mass_data.end()[-1]) * step;
-		h1 = dxdt(velocity_data.end()[-1]) * step;
-
-		//t - dt
-		k2 = dvdt(force_data.back(), mass_data.back()) * step;
-		h2 = dxdt(velocity_data.back()) * step;
-
-		//t 
-		k3 = dvdt(force, mass) * step;
-		h3 = dxdt(velocity) * step;
-
 		//Predictor
-		k0 = (k3 * 23. - k2 * 16. + k1 * 5.) / 12.;
-		h0 = (h3 * 23. - h2 * 16. + h1 * 5.) / 12.;
-
-		//Corrector
-		velocity += (k0 * 5. + k3 * 8. - k2) / 12.;
-		position += (h0 * 5. + h3 * 8. - h2) / 12.;
+		velocity += (a * 23. - a_1 * 16. + a_2 * 5.) * step / 12.;
+		position += (v * 23. - v_1 * 16. + v_2 * 5.) * step / 12.;
 	}
+	
+	//update variables
+	a_2 = a_1;
+	a_1 = a;
+	v_2 = v_1;
+	v_1 = v;
 }
-
-
-
 
 void Solver::Solve() {
 
 	//save initial position
 	Vector3D initial_pos = Ship.position;
-	double n = T / step;
-	int stop = 0;
 
-	for (time = 0; time < T; time += step) {
-		if (stop++ >= n) break; //check ammount of steps
+	for (int i = 0; i < n_steps; i++) {
 		grav_forces.Zero();
 		distance.Zero();
 		Ship.PotentialEnergy = 0;
 
-		if (!Planets.empty()) { 
+		if (!Planets.empty()) {
 			//move planets around orbit
 			Move_Orbit(true);
 			Calculate_Grav();
 		}
 
-			//use forces only if particle has a mass 
+		//use forces only if particle has a mass 
 		if (Ship.mass > 0) {
 			Calculate_Net();
 
@@ -636,7 +634,7 @@ void Solver::Solve() {
 				Adams_Bashforth(Ship.velocity, Ship.position, Ship.force, Ship.mass);
 				break;
 			case euler:
-				Euler(Ship.velocity, Ship.position, Ship.force, Ship.mass); 
+				Euler(Ship.velocity, Ship.position, Ship.force, Ship.mass);
 
 				break;
 			case midpoint:
@@ -659,23 +657,24 @@ void Solver::Solve() {
 		Ship.KineticEnergy = Ship.mass / 2 * (pow(Ship.velocity.x, 2) + pow(Ship.velocity.y, 2) + pow(Ship.velocity.z, 2));
 		Ship.CalculatedEnergy = true;
 
+		//fuel 
+		if (engine_used) {
+				fuel_used = Ship.fuel_usage * step; //calculate fuel used
+				Ship.mass -= fuel_used;
+				Ship.fuel -= fuel_used;
+		}
+
 		//save values to vectors
 		Push_Back();
+
+		time += step;
 	}
 
 	//display information at the end of motion:
 	std::cout << "Result: \n" << "\nTime of motion: " << T << " seconds" << std::endl;
 	Ship.Print_info();
 	Print_Pauses();
-	
-	Vector3D errorv, errorx, numv, numx;
-	numx = { 63.568516, 381.411099, -120.780181 };
-	numv = { 2.564665, 15.387988, -4.872863 };
-	errorv = Ship.velocity - numv;
-	errorx = Ship.position - numx;
-	std::cout << "Errorv: " << errorv << "\n Errorx: " << errorx << std::endl;
-	
-}
+	}
 
 void Solver::Move_Orbit(bool save) {
 
@@ -750,14 +749,14 @@ void Solver::Save_data() {
 	std::ofstream file;
 	file.open(filename.c_str());
 	file.precision(10);
-	
+
 	//write informational line
 	file << std::fixed << " Time[s]" << " Mass[kg]" << " Fuel[kg]" << " FuelUsage[kg/s]" 
 		<< " Position.x[m]" << " Position.y[m]" << " Position.z[m]" 
 		<< " Velocity.x[m/s]" << " Velocity.y[m/s]" << " Velocity.z[m/s]"
 		<< " Engine Force.x[N]" << " Engine Force.y[N]" << " Engine Force.z[N]"
 		<< " Net Force.x[N]" << " Net Force.y[N]" << " Net Force.z[N]"
-		<< " Kinetic Energy[J]" << " Potential Energy[J]"  << " Method" << std::endl;
+		<< " Kinetic Energy[J]" << " Potential Energy[J]"  << " Method" << "Total Energy" << std::endl;
 
 	for (auto step = 0; step < time_data.size(); step++) {
 
@@ -766,11 +765,9 @@ void Solver::Save_data() {
 			<< " " << velocity_data[step].x << " " << velocity_data[step].y << " " << velocity_data[step].z
 			<< " " << engine_data[step].x << " " << engine_data[step].y << " " << engine_data[step].z
 			<< " " << force_data[step].x << " " << force_data[step].y << " " << force_data[step].z 
-			<< " " << kinetic_data[step] << " " << potential_data[step] << " " << method << std::endl;
+			<< " " << kinetic_data[step] << " " << potential_data[step] << " " << method << " " << kinetic_data[step] + potential_data[step] << std::endl;
 	}
 	file.close();
 
 	Save_Planets();
 }
-
-

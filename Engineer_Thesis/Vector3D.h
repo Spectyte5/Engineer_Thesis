@@ -138,10 +138,14 @@ public:
 
 	/// Multiply vector by scale
 	///
-	/// @param i is integer value by which we want to multiply our vector
+	/// @param d is double value by which we want to multiply our vector
+	/// @returns Vector3D with values multipliyed by d
 	Vector3D operator*(const double& d);
 
-
+	/// Multiply vector by scale
+	///
+	/// @param d is double value by which we want to divide our vector
+	/// @returns Vector3D with values divided by d
 	Vector3D operator/(const double& d);
 
 	///Sets values of the x,y,z to 0

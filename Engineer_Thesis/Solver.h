@@ -14,14 +14,29 @@ class Control;
 class Solver {
 
 public:
-	///Gravitational constant
+
+	/// Universal Gravitational constant
 	const double G = 6.67259e-11;
-
+	/// Index of current interval for RKIV
 	int index = 0;
+	/// variable to store mass for RKIV
 	double temp_mass;
+	/// variable to store force for RKIV
 	Vector3D temp_force;
-	//int z = 1;
-
+	/// Number of steps for simulation
+	int n_steps;
+	/// variable to store current acceleration for AB
+	Vector3D a;
+	/// variable to store current velocity for AB
+	Vector3D v; 
+	/// variable to store previous step acceleration for AB
+	Vector3D a_1; 
+	/// variable to store acceleration from two steps before for AB
+	Vector3D a_2; 
+	/// variable to store previous step velocity for AB
+	Vector3D v_1; 
+	/// variable to store velocity from two steps before for AB
+	Vector3D v_2;
 	/// vectors for storing current time value
 	std::vector <double> time_data;
 	/// vectors for storing current mass 
@@ -83,14 +98,6 @@ public:
 	///
 	/// Setup Particle and planets in simulation, fill all engine intervals
 	void Setup();
-
-
-	void Use_fuel() {
-		fuel_used = Ship.fuel_usage * step; //calculate fuel used
-		Ship.mass -= fuel_used;
-		Ship.fuel -= fuel_used;
-	}
-
 	/// Json Validation function
 	/// 
 	/// Check if vector file validates against the schema
@@ -134,8 +141,19 @@ public:
 	/// Sets the value of net force taking in to account gravitational and thrust forces
 	/// @see Calculate_Grav() and UseEngine() for more information about forces calculation
 	void Calculate_Net();
-
+	/// Function for Reseting Parameters in RKIV method
+	///
+	/// Resets the paramaters changed for K2, K3, K4 coefficents of RKIV.
+	/// @see Reset_Param() for the function changing paramaters
 	void Reset_Param();
+
+	/// Recalculating force in RKIV method
+	///
+	/// Sets the value of net force taking in to account gravitational and thrust forces
+	/// @param time is time at which the force and mass should be recalculated
+	/// @param position is position at the time given
+	/// @param force is the force that will be recalculated
+	/// @param mass is the mass that will be recalculated
 	void Recalculate_Forces(double time, double& mass, Vector3D position, Vector3D& force);
 	/// Euler method
 	///
@@ -163,7 +181,7 @@ public:
 	void Midpoint(Vector3D& velocity, Vector3D& position, Vector3D force, double mass);
 	/// Adams-Bashforth's method
     ///
-    /// Function solving and ODE using the Adams-Bashforth's predictor and corrector method for calculating and setting parameters of the ship
+    /// Function solving and ODE using the Adams-Bashforth predictor and corrector method for calculating and setting parameters of the ship
 	/// @param velocity is velocity at current time
 	/// @param position is position at current time 
 	/// @param force is force acting on the spaceship

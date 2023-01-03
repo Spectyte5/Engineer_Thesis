@@ -45,7 +45,7 @@ with open('../Engineer_Thesis/Simulation_History/Ships/%s.txt' % name) as f:
     ekin = [float(line.split()[16]) for line in lines]
     epot = [float(line.split()[17]) for line in lines]
     meth = [int(line.split()[18]) for line in lines]
-
+    enet = [float(line.split()[19]) for line in lines]
 
 with open('../Engineer_Thesis/Simulation_History/Planets/%s_Planets.txt' % name) as f:
     lines = f.readlines()[1: ]
@@ -163,6 +163,7 @@ else:
     plt.subplot(2, 3, 6)
     plt.plot(time, ekin, label="Kinetic")
     plt.plot(time, epot, label="Potential")
+    plt.plot(time, enet, label="Total")
     plt.title("Energy in time plot")
     plt.xlabel("Time[s]")
     plt.ylabel("Energy[J]")

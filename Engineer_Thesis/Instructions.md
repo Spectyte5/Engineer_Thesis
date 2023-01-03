@@ -45,7 +45,7 @@ Units used are SI units:
 2. Midpoint
 3. Runge-Kutta IV
 - **step** - double type *number* equal to timesteps used for simulation. 
-- **time** - double type *number*, the final time of simulation.
+- **n** - integer type *number*, the ammount of steps in the simulation.
 ### planets 
 - **name** - *string* type, name of the planet
 - **mass** - double type *number*, mass of the planet

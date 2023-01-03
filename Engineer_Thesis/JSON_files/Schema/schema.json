@@ -544,17 +544,17 @@
     "default": {},
     "title": "The data Schema",
     "required": [
-      "time",
+      "n",
       "step",
       "ode"
     ],
     "properties": {
-      "time": {
-        "type": "number",
-        "default": 0.0,
-        "title": "The time Schema",
+      "n": {
+        "type": "integer",
+        "default": 0,
+        "title": "The number of steps Schema",
         "examples": [
-          120.0
+          500
         ]
       },
       "step": {
@@ -577,7 +577,7 @@
     },
     "examples": [
       {
-        "time": 120.0,
+        "time": 500,
         "step": 1.0,
         "ode": 3
       }
@@ -687,7 +687,7 @@
       }
     ],
     "data": {
-      "time": 120.0,
+      "time": 500,
       "step": 1.0,
       "ode": 3
     }
