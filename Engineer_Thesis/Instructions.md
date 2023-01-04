@@ -93,7 +93,7 @@ For stationary Planets (orbit = false):
   "data": {
     "ode": 3,
     "step": 1,
-    "time": 42500
+    "n": 42500
   },
   "planets": [
     {
